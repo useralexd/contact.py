@@ -47,9 +47,9 @@ def command_start(message):
 
 #command for admin: Used to view the block message
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblockmessage"])
-def command_start(message):
+def command_viewblockmessage(message):
        with open(config.storage_blockmsg) as f:
-          if os.stat(config.storage_nonavailmsg).st_size == 0:
+          if os.stat(config.storage_blockmsg).st_size == 0:
             bot.send_message(message.chat.id, """*Oops!*
 You haven't set any *Block Message* for the users. 
 To set one kindly send: /setblockmessage to me""",parse_mode="Markdown")
@@ -58,7 +58,7 @@ To set one kindly send: /setblockmessage to me""",parse_mode="Markdown")
 
 #command for admin to set the block message that the user after getting blocked
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setblockmessage"])
-def command_start(message):
+def command_setblockmessage(message):
     blockmsg = bot.send_message(message.chat.id, "Alright now send me your text that you want the user to see when he/she is *blocked*",parse_mode="Markdown")
     bot.register_next_step_handler(blockmsg, lambda m: dictionary.unvb_msg(m, file=config.storage_blockmsg))
 
@@ -83,7 +83,7 @@ def command_blocklist(message):
 
 #command for admin: Used to view your Unavailable Message
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewunavailablemessage"])
-def command_start(message):
+def command_unavailablemessage(message):
        with open(config.storage_nonavailmsg) as f:
           if os.stat(config.storage_nonavailmsg).st_size == 0:
             bot.send_message(message.chat.id, """*Oops!*
@@ -94,30 +94,30 @@ To set one kindly send: /setunavailablemessage to me""",parse_mode="Markdown")
 
 # Handle always first "/start" message when new chat with your bot is created (for users other than admin)
 @bot.message_handler(func=lambda message: message.chat.id != config.my_id, commands=["start"])
-def command_start(message):
+def command_start_all(message):
     bot.send_message(message.chat.id, "Hey "+ message.chat.first_name +"!"+"\n"+" Write me your text and the admin will get in touch with you shortly.")
     
 #command for admin to set the message the users will see when the admin status is set to unavailable
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setunavailablemessage"])
-def command_start(message):
+def command_setunavailablemessage(message):
     unvb = bot.send_message(message.chat.id, "Alright now send me your text that you want others to see when you're *unavailable*",parse_mode="Markdown")
     bot.register_next_step_handler(unvb, lambda m: dictionary.unvb_msg(m, file=config.storage_nonavailmsg))
 
 #command for admin to set his/her status as available, this will simply re-write the availability.txt file with the text "available"
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["available"])
-def command_start(message):
+def command_available(message):
     bot.send_message(message.chat.id, "Your Status has been set as *Available*",parse_mode="Markdown")
     dictionary.set_status(config.storage_availability,"Available")
 
 #command for admin to set his/her status as unavailable, this will simply re-write the availability.txt file with the text "unavailable"
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["unavailable"])
-def command_start(message):
+def command_unavailable(message):
     bot.send_message(message.chat.id, "Your Status has been set as *Unavailable*",parse_mode="Markdown")
     dictionary.set_status(config.storage_availability,"Unavailable")
 
 #command for the admin to check his/her current status. The .checkstatus() method simply reads the text in the availability.txt file
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["checkstatus"])
-def command_start(message):
+def command_checkstatus(message):
      ww = dictionary.check_status(config.storage_availability)
      if ww == "false":
         bot.send_message(message.chat.id, "Your current status  is *Unavailable*",parse_mode="Markdown")
@@ -128,7 +128,7 @@ def command_start(message):
 @bot.message_handler(func=lambda message: message.chat.id != config.my_id, content_types=['text', 'audio', 'document', 'photo', 'sticker', 'video',
                                     'voice', 'location', 'contact'])
 #checks whether the admin has blocked that user via bot or not
-def blockk(message):
+def handle_or_block(message):
   if message.chat.id in user_list:
      with open(config.storage_blockmsg) as t:
         bot.send_message(message.chat.id, t.read())
