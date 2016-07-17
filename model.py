@@ -24,7 +24,7 @@ class User(Model, types.User):
         super().__init__(id, first_name, last_name, username)
 
     def update(self, data):
-        assert self.id == data.id
+        assert self.id == str(data.id)
         self.first_name = data.first_name
         self.last_name = data.last_name
         self.username = data.username

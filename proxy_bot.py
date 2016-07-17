@@ -45,7 +45,7 @@ To set one kindly send: /setblockmessage to me""",parse_mode="Markdown")
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setblockmessage"])
 def command_setblockmessage(message):
     blockmsg = bot.send_message(message.chat.id, "Alright now send me your text that you want the user to see when he/she is *blocked*",parse_mode="Markdown")
-    bot.register_next_step_handler(blockmsg, lambda m: dictionary.unvb_msg(m, file=config.storage_blockmsg))
+    bot.register_next_step_handler(blockmsg, lambda m: dictionary.save_msg(m, file=config.storage_blockmsg))
 
 #to view all the nicknames in the format --> nick-name : user first name
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewnicknames"])
@@ -88,7 +88,7 @@ def command_start_all(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setunavailablemessage"])
 def command_setunavailablemessage(message):
     unvb = bot.send_message(message.chat.id, "Alright now send me your text that you want others to see when you're *unavailable*",parse_mode="Markdown")
-    bot.register_next_step_handler(unvb, lambda m: dictionary.unvb_msg(m, file=config.storage_nonavailmsg))
+    bot.register_next_step_handler(unvb, lambda m: dictionary.save_msg(m, file=config.storage_nonavailmsg))
 
 #command for admin to set his/her status as available, this will simply re-write the availability.txt file with the text "available"
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["available"])
@@ -114,13 +114,13 @@ def command_checkstatus(message):
 # Handle the messages which are not sent by the admin user(the one who is handling the bot) sends texts, audios, document etc to the admin
 @bot.message_handler(func=lambda message: message.chat.id != config.my_id, content_types=['text', 'audio', 'document', 'photo', 'sticker', 'video',
                                     'voice', 'location', 'contact'])
-#checks whether the admin has blocked that user via bot or not
 def handle_or_block(message):
-  user = db.usr.get_by_id(message.from_user.id)
-  if not user:
-    user = model.User(**message.from_user)
-  user.update(message.from_user)
+  user = db.usr.get_by_id(message.from_user.id)  # get user from database
+  if not user: # If user is new
+    user = model.User(id=message.from_user.id, first_name=message.from_user.first_name) # creates user model
+  user.update(message.from_user) # updates user data (username, first_name and last_name)
 
+  # checks whether the admin has blocked that user via bot or not
   if user.blocked:
      with open(config.storage_blockmsg) as t:
         bot.send_message(message.chat.id, t.read())
@@ -128,99 +128,103 @@ def handle_or_block(message):
   else:
    #forwards the message sent by the user to the admin. Only if the user is not blocked
    # checks if the user has replied to any previously send message. If yes ---> Then it checks the format and sends that text again to the admin if----> No then it simply forwards the message to the admin
-   if not message.reply_to_message:
-     bot.forward_message(config.my_id, message.chat.id,    message.message_id)
-   else:
-     replytext = message.reply_to_message.text
-     replysticker = message.reply_to_message.sticker
-     replyaudio = message.reply_to_message.audio
-     replydocument = message.reply_to_message.document
-     replyphoto = message.reply_to_message.photo
-     replyvideo = message.reply_to_message.video
-     replyvoice = message.reply_to_message.voice
-     replylocation = message.reply_to_message.location
-     replycontact = message.reply_to_message.contact
-     if not replytext:
-       if not replysticker:
-          if not replyaudio:
-            if not replydocument:
-               if not replyphoto:
-                 if not replyvideo:
-                    if not replyvoice:
-                      if not replylocation:
-                        if not replycontact:
-                           bot.forward_message(config.my_id, message.chat.id,    message.message_id) 
+    text, markup = get_user_card(user)
+    bot.send_message(config.my_id, text, reply_markup=markup)
+    if message.reply_to_message:
+      if message.reply_to_message.text:
+        text = message.reply_to_message.text
+        bot.send_message(config.my_id, "<b>" + message.chat.first_name + " replied to :" + "</b>" + text,
+                         parse_mode="HTML")
+      elif message.reply_to_message.sticker:
+        m = message.reply_to_message.sticker.file_id
+        bot.send_message(config.my_id, "<b>" + message.chat.first_name + " replied to 👇  sticker" + "</b>",
+                         parse_mode="HTML")
+        bot.send_sticker(config.my_id, m)
+      elif message.reply_to_message.audio:
+        audio = message.reply_to_message.audio
+        m = audio.file_id
+        bot.send_message(config.my_id, "<b>" + message.chat.first_name + " replied to 👇 audio " + "</b>",
+                         parse_mode="HTML")
+        bot.send_audio(config.my_id, performer=audio.performer, audio=m, title=audio.title,
+                       duration=audio.duration)
+      elif message.reply_to_message.document:
+        m = message.reply_to_message.document.file_id
+        bot.send_document(config.my_id, m, caption = message.chat.first_name + " replied to 👆")
+      elif message.reply_to_message.photo:
+        m = message.reply_to_message.photo[-1].file_id
+        bot.send_photo(config.my_id, m, caption=message.chat.first_name + " replied to 👆")
+      elif message.reply_to_message.video:
+        m = message.reply_to_message.video.file_id
+        bot.send_video(config.my_id, m, caption=message.chat.first_name + " replied to 👆")
+      elif message.reply_to_message.voice:
+        m = message.reply_to_message.voice.file_id
+        bot.send_message(config.my_id, "<b>" + message.chat.first_name + " replied to 👇  Voice Note" + "</b>",
+                         parse_mode="HTML")
+        bot.send_voice(config.my_id, m)
+      elif message.reply_to_message.location:
+        location = message.reply_to_message.location
+        bot.send_message(config.my_id, "<b>" + message.chat.first_name + " replied to 👇  Location" + "</b>",
+                         parse_mode="HTML")
+        bot.send_location(config.my_id, latitude=location.latitude, longitude=location.longitude)
+      elif message.reply_to_message.contact:
+        contact = message.reply_to_message.contact
+        m = contact[-1].file_id
+        bot.send_message(config.my_id,"<b>"+ message.chat.first_name + " replied to 👇  Contact" +"</b>", parse_mode="HTML")
+        bot.send_contact(config.my_id, m, first_name=contact.first_name)
+    bot.forward_message(config.my_id, message.chat.id,    message.message_id)
 
-                        else:
-                          m = replycontact[-1].file_id
-                          bot.send_message(config.my_id,"<b>"+ message.chat.first_name + " replied to 👇  Contact" +"</b>", parse_mode="HTML")
-                          bot.send_contact(config.my_id, m, first_name=replycontact.first_name)
-                          bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
-                      else:
-                        bot.send_message(config.my_id,"<b>"+ message.chat.first_name + " replied to 👇  Location" +"</b>", parse_mode="HTML")
-                        bot.send_location(config.my_id, latitude=replylocation.latitude, longitude=replylocation.longitude)
-                        bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
-                    else:
-                       m = replyvoice.file_id
-                       bot.send_message(config.my_id,"<b>"+ message.chat.first_name + " replied to 👇  Voice Note" +"</b>", parse_mode="HTML")
-                       bot.send_voice(config.my_id, m)
-                       bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
-                 else:
-                  m = replyvideo.file_id
-                  bot.send_video(config.my_id, m, caption = message.chat.first_name + " replied to 👆")
-                  bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
+    q = dictionary.check_status(config.storage_availability) #checks the status of the admin whether he's available or not
+    if q == "false":
+      with open(config.storage_nonavailmsg) as m:
+        bot.send_message(message.chat.id, m.read())
 
-               else:
-                m = replyphoto[-1].file_id
-                bot.send_photo(config.my_id, m, caption = message.chat.first_name + " replied to 👆")
-                bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
-            else:
-              m = replydocument.file_id
-              bot.send_document(config.my_id, m, caption = message.chat.first_name + " replied to 👆")
-              bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
-          else:
-           m = replyaudio.file_id
-           bot.send_message(config.my_id,"<b>"+ message.chat.first_name + " replied to 👇 audio " +"</b>", parse_mode="HTML")
-           bot.send_audio(config.my_id, performer=replyaudio.performer, audio=m, title=replyaudio.title,
-                           duration=replyaudio.duration)
-           bot.forward_message(config.my_id, message.chat.id,    message.message_id)   
-       else:
-           m = replysticker.file_id
-           bot.send_message(config.my_id,"<b>"+ message.chat.first_name + " replied to 👇  sticker" +"</b>", parse_mode="HTML")
-           bot.send_sticker(config.my_id,  m)
-           bot.forward_message(config.my_id, message.chat.id,    message.message_id)  
-     else:
-         bot.send_message(config.my_id, "<b>"+ message.chat.first_name + " replied to :" +"</b>"+ replytext, parse_mode="HTML")
-         bot.forward_message(config.my_id, message.chat.id,    message.message_id)
+    db.usr.update(user)
 
-   # dictionary.add_avaiblist(config.storage_avaiblist,message.chat.id) #adds the message.chat.id of the user in avaiblist.txt check config.py
-   q = dictionary.check_status(config.storage_availability) #checks the status of the admin whether he's available or not
-   # if q == "false": #if not available then the user gets the unavailable text message from unavailmsg.txt check config.py
-   #    x = [line.rstrip('\n') for line in open(config.storage_avaiblist,'rt')]
-   # else: #if the admin is available then the bot functions normally as the way it should
-   #    x = [line.rstrip('\n') for line in open('txtfiles/blank.txt','rt')]
-   # if str(message.chat.id) in x:
-   with open(config.storage_nonavailmsg) as m:
-     bot.send_message(message.chat.id, m.read())
+def get_user_card(user):
+  text = ''
+  if user.username:
+    text += '@' + user.username
+  text += '''
+  Id: {id}
+  First name: {first}
+  Last name: {last}
+  '''.format(id=user.id, first=user.first_name, last=user.last_name or '_None_')
+  if user.blocked:
+    text += 'BLOCKED'
 
-   db.usr.update(user)
+  markup = telebot.types.InlineKeyboardMarkup()
+  if user.blocked:
+    markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='un' + user.id))
+  else:
+    markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='ub' + user.id))
+
+  return text, markup
+
+@bot.callback_query_handler(func=lambda cb: cb.data.startswith('u'))
+def user_block_toggle(cb):
+  user = db.usr.get_by_id(cb.data[2:])
+  if cb.data[1] == 'b':
+    user.blocked = True
+  elif cb.data[1] == 'n':
+    user.blocked = False
+  text, markup = get_user_card(user)
+  bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["text"])
 def my_text(message):
-    
     # If we're just sending messages to bot (not replying) -> do nothing and notify about it.
     # Else -> get ID whom to reply and send message FROM bot.
     if message.reply_to_message:
        if not message.reply_to_message.forward_from:
-          bot.send_message(config.my_id,"*Oops! Something went wrong make sure you're replying to the right person!*",parse_mode="Markdown")
+         bot.send_message(config.my_id,"*Oops! Something went wrong make sure you're replying to the right person!*",parse_mode="Markdown")
        else:        
-        
-        chat_id = message.reply_to_message.forward_from.id
-        bot.send_chat_action(chat_id, action = 'typing')
-        bot.send_message(chat_id, message.text)        
+         user_id = message.reply_to_message.forward_from.id
+         bot.send_chat_action(user_id, action = 'typing')
+         bot.send_message(user_id, message.text)
 
     else:
-      bot.send_message(config.my_id,"No one to reply!")
+      handle_or_block(message) # FIXME: TEMP FOR DEBUG, REPLACE WITH FOLLOWING LINE
+      # bot.send_message(config.my_id,"No one to reply!")
 
 
             
