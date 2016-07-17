@@ -4,15 +4,15 @@
 token = "TOKEN"
 
 
-storage_name = "StorageUser"
-storage_block = 'txtfiles/chatids.txt'
-storage_userdir = 'txtfiles/userdir.txt'
-storage_blocklist = 'txtfiles/blocklist.txt'
+# storage_name = "StorageUser"
+# storage_block = 'txtfiles/chatids.txt'
+# storage_userdir = 'txtfiles/userdir.txt'
+# storage_blocklist = 'txtfiles/blocklist.txt'
 storage_availability = 'txtfiles/availability.txt'
-storage_avaiblist = 'txtfiles/avaiblist.txt'
+# storage_avaiblist = 'txtfiles/avaiblist.txt'
 storage_nonavailmsg = 'txtfiles/nonavailmsg.txt'
-storage_namelist = 'txtfiles/namelist.txt'
-storage_fnamelist = 'txtfiles/fnamelist.txt'
+# storage_namelist = 'txtfiles/namelist.txt'
+# storage_fnamelist = 'txtfiles/fnamelist.txt'
 storage_blockmsg = 'txtfiles/blockmsg.txt'
 # Your own chat id. Ask https://telegram.me/my_id_bot to tell you yours
 my_id = yourid
