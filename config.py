@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 # Bot's token. Obtain yours from https://telegram.me/botfather
-token = "TOKEN"
+token = "<TOKEN>"
 # Your telegram user id. Get it from @my_id_bot
-my_id = 'yourid'
+my_id = '<your_id>'
 
 # Availability and messages
 storage_availability = 'txtfiles/availability.txt'
@@ -12,13 +12,14 @@ storage_blockmsg = 'txtfiles/blockmsg.txt'
 
 
 # Database
-db_auth = 'url'
-db_name = 'name'
+# your MongoDB connection url
+db_auth = 'mongodb://<user>:<password>@<my.mongodb.com>:<port>/<database>'
+db_name = '<database_name>'
 
 try:
-  from local_config import *
+    from local_config import *
 except ImportError:
-  pass
+    pass
 
 
 '''
