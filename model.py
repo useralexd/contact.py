@@ -1,6 +1,8 @@
 from telebot import types as types
 import bson
 
+
+# adds Dictionaryable behavior and marks models which can be stored in db
 class Model(types.Dictionaryable):
     def to_dic(self):
         d = {}
@@ -14,6 +16,7 @@ class Model(types.Dictionaryable):
         return d
 
 
+# Represents User and adds extra fields to telepot's class
 class User(Model, types.User):
     def __init__(self, *args, **kwargs):
         if not args:
@@ -33,17 +36,20 @@ class User(Model, types.User):
         self.username = data.username
 
 
+# Represents message, add ObjectId
 class Message(Model, types.Message):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.id = bson.ObjectId()
 
 
+# Just adds Dictionaryable to chat
 class Chat(Model, types.Chat):
     pass
 
 
-def replace_models():
+# Replaces classes in telepot.types
+def replace_classes():
     types.User = User
     types.Message = Message
     types.Chat = Chat

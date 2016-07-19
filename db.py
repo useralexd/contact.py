@@ -40,10 +40,11 @@ class __MessageDAO(__DAO):
 __db_client = MongoClient(config.db_auth)
 __db = __db_client[config.db_name]
 
+
 def __get_coll(coll_name):
-  if coll_name not in __db.collection_names():
-    __db.create_collection(coll_name)
-  return __db[coll_name]
+    if coll_name not in __db.collection_names():
+        __db.create_collection(coll_name)
+    return __db[coll_name]
 
 usr = __UserDAO(__get_coll('usr'))
 msg = __MessageDAO(__get_coll('msg'))
