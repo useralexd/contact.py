@@ -67,27 +67,22 @@ def command_setblockmessage(message):
 
 
 # command for admin
-# view all the nicknames in the format --> nick-name : user first name
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewnicknames"])
-def command_nicknamelist(message):
-    raise NotImplementedError
-    # with open(config.storage_fnamelist) as f:
-    #    if os.stat(config.storage_fnamelist).st_size == 0:
-    #       bot.send_message(message.chat.id, "No nicknames yet!")
-    #    else:
-    #       bot.send_message(message.chat.id,"`Nick Names:`" +"\n"+ "`(nick name: first name)`"+"\n"+ f.read(), parse_mode="Markdown")
-
-
-# command for admin
 # view the whole Block List containing usernames and nicknames of the blocked users, refer config.py for more info
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblocklist"])
 def command_blocklist(message):
-    raise NotImplementedError
-    # with open(config.storage_blocklist) as f:
-    #    if os.stat(config.storage_blocklist).st_size == 0:
-    #       bot.send_message(message.chat.id, "No user is blocked!")
-    #    else:
-    #       bot.send_message(message.chat.id,"`Block List:`"+"\n"+ f.read(), parse_mode="Markdown")
+    bot.send_chat_action(message.from_user.id, action="typing")
+    blocklist = db.usr.get_blocked()
+    if blocklist:
+        s = ""
+        for user in blocklist:
+            s += '''\n/u{id} {username} {first_name}\n'''.format(
+                id=user.id,
+                username='@' + user.username if user.username else '',
+                first_name=user.first_name
+            )
+    else:
+        s = "You haven't blocked any users yet!"
+    bot.reply_to(message, s)
 
 
 # command for admin: Used to view your Unavailable Message
@@ -274,15 +269,19 @@ def handle_or_block(message):
                 bot.send_message(message.chat.id, m.read())
 
 
+# helper function which returns text and reply_markup for user card
 def get_user_card(user):
-    text = ''
-    if user.username:
-        text += '@' + user.username
-    text += '''
+    text = '''
 Id: {id}
+Username: {username}
 First name: {first}
 Last name: {last}
-    '''.format(id=user.id, first=user.first_name, last=user.last_name or '_None_')
+    '''.format(
+        id=user.id,
+        first=user.first_name,
+        last=user.last_name or '_Not_set_',
+        username='@' + user.username if user.username else '_Not_set_'
+    )
     if user.blocked:
         text += 'BLOCKED'
 
@@ -293,6 +292,19 @@ Last name: {last}
         markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='ub' + user.id))
 
     return text, markup
+
+
+# a set of commands for admin to view user's cards
+@bot.message_handler(func=lambda m: m.text.startswith('/u') and m.chat.id == config.my_id, content_types=['text'])
+def show_user(message):
+    bot.send_chat_action(message.from_user.id, action="typing")
+    uid = message.text.lstrip('/u').split()[0]
+    user = db.usr.get_by_id(uid)
+    if user:
+        text, markup = get_user_card(user)
+    else:
+        text, markup = "Invalid command", None
+    bot.send_message(config.my_id, text, reply_markup=markup)
 
 
 # handles inline keyboard buttons under the user_card
