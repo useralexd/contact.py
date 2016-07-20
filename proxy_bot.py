@@ -13,7 +13,7 @@ bot = telebot.TeleBot(config.token)
 
 
 # for the list of all the commands
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["help"])
+@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["start", "help"])
 def command_help(message):
     bot.send_message(
         message.chat.id,
