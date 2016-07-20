@@ -1,6 +1,34 @@
 from telebot import types as types
 import bson
+import base64
 
+import config
+
+
+def to_python(value):
+    try:
+        return bson.ObjectId(base64.urlsafe_b64decode(value))
+    except (bson.errors.InvalidId, ValueError, TypeError):
+        raise ValueError
+
+
+def to_url(value):
+    return base64.urlsafe_b64encode(value.binary)
+
+
+def short_id(value):
+    oid = bson.ObjectId(str(value))
+    time = int(oid.generation_time.timestamp()) * 1000
+    print(time)
+    counter = int(str(oid)[-6:], 16)
+    counter = int(str(counter)[-3:], 10)
+    print(counter)
+    time += counter
+    print(time)
+    s = base64.urlsafe_b64encode(time.to_bytes(6, 'big'))
+    s = s[1:]
+    s = s[::-1]
+    return s
 
 # adds Dictionaryable behavior and marks models which can be stored in db
 class Model(types.Dictionaryable):
@@ -41,6 +69,23 @@ class Message(Model, types.Message):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.id = bson.ObjectId()
+
+    def to_dic(self):
+        d = dict()
+        d['_id'] = self.id
+        d['tg_id'] = self.message_id
+        d['short_id'] = short_id(self.id)
+        d['from_user'] = self.from_user.id
+        if self.from_user.id == config.my_id:
+            d['with'] = self.reply_to_message.from_user.id
+        else:
+            d['with'] = self.from_user.id
+
+        if self.text:
+            d['text'] = self.text
+        else:
+            d['text'] = 'Non text message: /m' + short_id(self.id)
+        return d
 
 
 # Just adds Dictionaryable to chat
