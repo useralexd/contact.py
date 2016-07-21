@@ -192,7 +192,7 @@ def handle_or_block(message):
         # checks if the user has replied to any previously send message.
         # If yes ---> Then it checks the format and sends that text again to the admin
         # If no ----> Then it simply forwards the message to the admin
-        db.msg.create(message)
+        db.msg.create(message)  # log message in db
         text, markup = get_user_card(user)
         bot.send_message(config.my_id, text, reply_markup=markup)
         if message.reply_to_message:
@@ -339,7 +339,7 @@ def my_text(message):
             user_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(user_id, action='typing')
             bot.send_message(user_id, message.text)
-
+            db.msg.create(message)  # log message in db
     else:
         handle_or_block(message)  # FIXME: TEMP FOR DEBUG, REPLACE WITH FOLLOWING LINE
         # bot.send_message(config.my_id,"No one to reply!")
@@ -360,6 +360,7 @@ def my_sticker(message):
             chat_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(chat_id, action='typing')
             bot.send_sticker(chat_id, message.sticker.file_id)
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(config.my_id, "No one to reply")
 
@@ -377,6 +378,7 @@ def my_photo(message):
             who_to_send_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(who_to_send_id, action='upload_photo')
             bot.send_photo(who_to_send_id, list(message.photo)[-1].file_id)
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
@@ -393,6 +395,7 @@ def my_voice(message):
         else:
             who_to_send_id = message.reply_to_message.forward_from.id
             bot.send_voice(who_to_send_id, message.voice.file_id, duration=message.voice.duration)
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
@@ -410,6 +413,7 @@ def my_document(message):
             who_to_send_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(who_to_send_id, action='upload_document')
             bot.send_document(who_to_send_id, data=message.document.file_id)
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
@@ -426,9 +430,14 @@ def my_audio(message):
         else:
             who_to_send_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(who_to_send_id, action='upload_audio')
-            bot.send_audio(who_to_send_id, performer=message.audio.performer,
-                           audio=message.audio.file_id, title=message.audio.title,
-                           duration=message.audio.duration)
+            bot.send_audio(
+                who_to_send_id,
+                performer=message.audio.performer,
+                audio=message.audio.file_id,
+                title=message.audio.title,
+                duration=message.audio.duration
+            )
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
@@ -446,6 +455,7 @@ def my_video(message):
             who_to_send_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(who_to_send_id, action='upload_video')
             bot.send_video(who_to_send_id, data=message.video.file_id, duration=message.video.duration)
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
@@ -464,6 +474,7 @@ def my_location(message):
             who_to_send_id = message.reply_to_message.forward_from.id
             bot.send_chat_action(who_to_send_id, action='find_location')
             bot.send_location(who_to_send_id, latitude=message.location.latitude, longitude=message.location.longitude)
+            db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
