@@ -61,6 +61,31 @@ class User(Model, types.User):
         self.last_name = data.last_name
         self.username = data.username
 
+    def __format__(self, format_spec):
+        if format_spec == 'short':
+            return '''/u{id} {username} {first_name} {blocked}'''.format(
+                id=self.id,
+                username='@' + self.username if self.username else '',
+                first_name=self.first_name,
+                blocked='BLOCKED' if self.blocked else ''
+            )
+        if format_spec == 'full':
+            return '''\
+Id: {id}
+Username: {username}
+First name: {first}
+Last name: {last}
+{blocked}'''.format(
+                id=self.id,
+                first=self.first_name,
+                last=self.last_name or '_Not_set_',
+                username='@' + self.username if self.username else '_Not_set_',
+                blocked='BLOCKED' if self.blocked else ''
+            )
+
+        return self.__format__('short')  # default to short if no format_spec
+
+
 
 # Represents message, add ObjectId
 class Message(Model, types.Message):
