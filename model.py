@@ -19,16 +19,14 @@ def to_url(value):
 def short_id(value):
     oid = bson.ObjectId(str(value))
     time = int(oid.generation_time.timestamp()) * 1000
-    print(time)
     counter = int(str(oid)[-6:], 16)
     counter = int(str(counter)[-3:], 10)
-    print(counter)
     time += counter
-    print(time)
     s = base64.urlsafe_b64encode(time.to_bytes(6, 'big'))
     s = s[1:]
     s = s[::-1]
     return s
+
 
 # adds Dictionaryable behavior and marks models which can be stored in db
 class Model(types.Dictionaryable):
@@ -49,7 +47,7 @@ class User(Model, types.User):
     def __init__(self, *args, **kwargs):
         if not args:
             args = (
-                kwargs.get('_id') or kwargs.get('id'),
+                int(kwargs.get('_id') or kwargs.get('id')),
                 kwargs['first_name'],
                 kwargs.get('last_name'),
                 kwargs.get('username'),
@@ -58,7 +56,7 @@ class User(Model, types.User):
         super().__init__(*args)
 
     def update(self, data):
-        assert self.id == str(data.id)
+        assert int(self.id) == int(data.id)
         self.first_name = data.first_name
         self.last_name = data.last_name
         self.username = data.username
@@ -76,7 +74,7 @@ class Message(Model, types.Message):
         d['tg_id'] = self.message_id
         d['short_id'] = short_id(self.id)
         d['from_user'] = self.from_user.id
-        if self.from_user.id == config.my_id:
+        if self.from_user.id == config.my_id and self.reply_to_message:
             d['with'] = self.reply_to_message.from_user.id
         else:
             d['with'] = self.from_user.id
