@@ -63,11 +63,10 @@ class User(Model, types.User):
 
     def __format__(self, format_spec):
         if format_spec == 'short':
-            return '''/u{id} {username} {first_name} {blocked}'''.format(
+            return '''/user{id} {username} {first_name}'''.format(
                 id=self.id,
                 username='@' + self.username if self.username else '',
-                first_name=self.first_name,
-                blocked='BLOCKED' if self.blocked else ''
+                first_name=self.first_name
             )
         if format_spec == 'full':
             return '''\

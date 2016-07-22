@@ -73,7 +73,7 @@ def command_help(message):
 `6`- /viewblockmessage: to view the block message (that the users will see)
 `7`- /setblockmessage : set the text message that you want users to see when they are blocked
 `8`- /viewblocklist  : allows you to view the list of blocked users
-`9`- /viewuserlist  : allows you to view all the users in database\n
+`9`- /viewuserlist  : allows you to view all non-blocked users in database\n
 *For any help and queries please contact -* [me](telegram.me/phash_bot) *or check out* [this](https://github.com/phash/proxybot)""",
         parse_mode="Markdown"
     )
@@ -127,7 +127,7 @@ def command_blocklist(message):
     if not db.usr.count:
         bot.send_message(config.my_id, "You haven't blocked any users yet!")
         return
-    users = db.usr.get_page()
+    users = db.usr.get_blocked_page()
     s = "Blocked list: \n\n"
     for user in users:
         s += '{}\n'.format(user)
@@ -155,7 +155,7 @@ def blocked_list_pages(cb):
     bot.answer_callback_query(cb.id, 'Done!')
 
 
-# command for admin: lists all users
+# command for admin: lists all non-blocked users
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewuserlist"])
 def command_users(message):
     bot.send_chat_action(message.from_user.id, "typing")
@@ -191,10 +191,10 @@ def user_list_pages(cb):
 
 
 # a set of commands for admin to view user's cards
-@bot.message_handler(func=lambda m: m.text.startswith('/u') and m.chat.id == config.my_id, content_types=['text'])
+@bot.message_handler(func=lambda m: m.text.startswith('/user') and m.chat.id == config.my_id, content_types=['text'])
 def show_user(message):
     bot.send_chat_action(message.from_user.id, action="typing")
-    uid = int(message.text.lstrip('/u').split()[0])
+    uid = int(message.text.lstrip('/user').split()[0])
     user = db.usr.get_by_id(uid)
     if user:
         text = '{:full}'.format(user)
@@ -301,7 +301,7 @@ def command_unavailable(message):
 # The dictionary.check_status() method simply reads the text in the availability.txt file
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["checkstatus"])
 def command_checkstatus(message):
-    if db.common.availability == 'available':
+    if db.common.availability == 'unavailable':
         bot.send_message(
             message.chat.id,
             "Your current status  is *Unavailable*",
@@ -429,7 +429,10 @@ def handle_all(message):
             bot.send_message(message.chat.id, db.common.nonavailmsg)
 
 
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["text"])
+@bot.message_handler(
+    func=lambda m: m.chat.id == config.my_id and m.chat.id not in bot.message_subscribers_next_step,
+    content_types=['text']
+)
 def my_text(message):
     # If we're just sending messages to bot (not replying) -> do nothing and notify about it.
     # Else -> get ID whom to reply and send message FROM bot.

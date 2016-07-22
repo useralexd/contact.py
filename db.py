@@ -30,8 +30,8 @@ class __DAO:
         if self.coll.insert_one(item.to_dic()):
             self.count += 1
 
-    def get_page(self, page_no=1, page_size=10):
-        cursor = self.coll.find({}).skip(page_size * (page_no - 1)).limit(page_size)
+    def _get_page(self, page_no=1, page_size=10, query={}):
+        cursor = self.coll.find(query).skip(page_size * (page_no - 1)).limit(page_size)
         return [self.type(**db_rec) for db_rec in cursor]
 
     def get_pages_count(self, page_size=10):
@@ -45,9 +45,11 @@ class __UserDAO(__DAO):
     def __init__(self, coll):
         super().__init__(coll, model.User)
 
-    def get_blocked(self):
-        return [self.type(**db_rec) for db_rec in self.coll.find({'blocked': True})]
+    def get_blocked_page(self, page_no=1, page_size=10):
+        return self._get_page(page_no, page_size, {'blocked': True})
 
+    def get_page(self, page_no=1, page_size=10):
+        return self._get_page(page_no, page_size, {'blocked': False})
 
 
 class __MessageDAO(__DAO):
