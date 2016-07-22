@@ -20,13 +20,18 @@
  * [Contact](#contact)
 
 ##ChangeLog!
+####Version1.1
+    * **Major Update**: Start Message editing by `/setstartmessage`
+    Start message is the fist message user sees, when he/she starts the bot.
+    * **Bugs in this version**: Hopefully no
+
 ####Version1.0
    * **Major Update**: 
       1. All storing data functionality moved to MongoDB. 
       2. Added paging to users list and blocked list.
       3. Simplified user blocking using inline keyboards.
       4. Code refactored and beautified.
-   * **Bugs in this version** : Hopefully no
+   * **Bugs in this version**: Hopefully no
 
    
  
@@ -46,6 +51,7 @@
 * Start bot: `bash launch.sh`
 
 ## What's new ???
+* You can now set Start Message the same way you do with the Block Message and Unavailable Message. New commands are `/setstartmessage` and `/viewstartmessage`
 * Bot sends _usercard_ with each user's message (which increases the number of messages, i know. I hope, I'll get to it later). _Usercard_ shows all info about user. Ream more about blocking and unblocking [here](#blocking-and-unblocking-feature).
 * Admins can set their status as `/available` or `/unavailable`. This means that when you will not be available bot will notify the user if he/she tries to text you by sending him your unavailable message, just like the way you have a pre-recorded message on answering machines! The bot will however forward you the message. You can set and view your unavailable message by typing `/setunavailablemessage` and `/setunavailablemessage` respectively.
 * You can now view the list of all users bot has seen! Type `/viewuserslist`. The list will contain basic info about every user and a command to their usercard.
@@ -63,6 +69,10 @@ The idea of this bot is pretty simple: you just place the bot between you and th
 <p align="center"> ![A simple scheme of interaction](https://habrastorage.org/files/4a2/d19/753/4a2d19753eb34073bfda0b872bf228b3.png)
 
 <p align="center">![Screenshot](http://i.imgur.com/YZoiTjd.png)
+
+#### Setting Start Message
+You can set Start Message -- the message, which user sees when he/she starts the bot.
+Use `/setstartmessage` command for setting it and `/viewstartmessage` for viewing it.
 
 ### Blocking and Unblocking Feature
 It was messy and complicated for me in Mr_Gigabyte's implementation, so I've fully rewrited it.

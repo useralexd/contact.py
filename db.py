@@ -66,14 +66,15 @@ class __CommonData(__DAO):
             self.data = {
                 'availability': 'available',
                 'blockmsg': "uh..oh you're blocked",
-                'nonavailmsg': "I'm sorry i'm apparently offline"
+                'nonavailmsg': "I'm sorry i'm apparently offline",
+                'startmsg': " Write me your text and the admin will get in touch with you shortly."
             }
             result = self.coll.insert_one(self.data)
             self.data['_id'] = result.inserted_id
 
     @property
     def availability(self):
-        return self.data['availability']
+        return self.data.get('availability') or ''
 
     @availability.setter
     def availability(self, value):
@@ -83,7 +84,7 @@ class __CommonData(__DAO):
 
     @property
     def blockmsg(self):
-        return self.data['blockmsg']
+        return self.data.get('blockmsg') or ''
 
     @blockmsg.setter
     def blockmsg(self, value):
@@ -92,11 +93,21 @@ class __CommonData(__DAO):
 
     @property
     def nonavailmsg(self):
-        return self.data['nonavailmsg']
+        return self.data.get('nonavailmsg') or ''
 
     @nonavailmsg.setter
     def nonavailmsg(self, value):
         self.data['nonavailmsg'] = value
+        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+
+
+    @property
+    def startmsg(self):
+        return self.data.get('startmsg')
+
+    @startmsg.setter
+    def startmsg(self, value):
+        self.data['startmsg'] = value
         self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
 
 

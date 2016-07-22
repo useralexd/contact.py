@@ -73,7 +73,10 @@ def command_help(message):
 `6`- /viewblockmessage: to view the block message (that the users will see)
 `7`- /setblockmessage : set the text message that you want users to see when they are blocked
 `8`- /viewblocklist  : allows you to view the list of blocked users
-`9`- /viewuserlist  : allows you to view all non-blocked users in database\n
+`9`- /viewuserlist  : allows you to view all non-blocked users in database
+`10`- /setstartmessage  : set the text message that you want users to see when they start the bot
+`11`- /viewstartmessage  : to view the Start Message
+\n
 *For any help and queries please contact -* [me](telegram.me/phash_bot) *or check out* [source code](https://github.com/p-hash/proxybot)""",
         parse_mode="Markdown"
     )
@@ -98,7 +101,7 @@ To set one kindly send: /setblockmessage to me""",
         )
 
 
-# command for admin to set the block message that the user after getting blocked
+# command for admin to set the block message that the user see after getting blocked
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setblockmessage"])
 def command_setblockmessage(message):
     blockmsg = bot.send_message(
@@ -115,6 +118,46 @@ def save_blockmsg(message):
     bot.reply_to(
         message,
         "Thanks! " + "\n" + "*The new Block Message has been set successfully* ",
+        parse_mode="Markdown"
+    )
+
+
+# command for admin: Used to view the start message
+@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewstartmessage"])
+def command_viewstartmessage(message):
+    if not db.common.startmsg:
+        bot.send_message(
+            message.chat.id,
+            """*Oops!*
+You haven't set any *Start Message* for the users.
+To set one kindly send: /setstartmessage to me""",
+            parse_mode="Markdown"
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "`Your Start Message:`" + "\n" + db.common.startmsg,
+            parse_mode="Markdown"
+        )
+
+
+# command for admin to set the start message that the user see when he starts the bot
+@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setstartmessage"])
+def command_setstartmessage(message):
+    startmsg = bot.send_message(
+        message.chat.id,
+        "Alright now send me your text that you want the user to see when he/she *starts* the bot",
+        parse_mode="Markdown"
+    )
+    bot.register_next_step_handler(startmsg, save_startmsg)
+
+
+# Next step handler for saving blockmsg
+def save_startmsg(message):
+    db.common.startmsg = str(message.text)
+    bot.reply_to(
+        message,
+        "Thanks! " + "\n" + "*The new Start Message has been set successfully* ",
         parse_mode="Markdown"
     )
 
@@ -268,7 +311,7 @@ def save_nonavailmsg(message):
     db.common.nonavailmsg = str(message.text)
     bot.reply_to(
         message,
-        "Thanks! " + "\n" + "*The new NonAvailable Message has been set successfully* ",
+        "Thanks! " + "\n" + "*The new Unavailable Message has been set successfully* ",
         parse_mode="Markdown"
     )
 
@@ -320,8 +363,7 @@ def command_checkstatus(message):
 def command_start_all(message):
     bot.send_message(
         message.chat.id,
-        "Hey " + message.chat.first_name + "!" + "\n" +
-        " Write me your text and the admin will get in touch with you shortly."
+        "Hey " + message.chat.first_name + "!\n" + db.common.startmsg
     )
 
 
