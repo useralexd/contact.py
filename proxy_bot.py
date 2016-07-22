@@ -214,7 +214,6 @@ def show_user(message):
 def user_block_toggle(cb):
     user = db.usr.get_by_id(int(cb.data[2:]))  # gets user info from db
     assert user  # makes sure that user is in db
-    user.update(cb.from_user)  # updates user data (username, first_name and last_name)
 
     if cb.data[1] == 'b':  # block command
         user.blocked = True
