@@ -2,6 +2,7 @@
 A simple BITM, for [Telegram](https://telegram.org/) acting as some kind of "proxy". Can use it as "virtual" second account for your purposes without revealing your "actual" identity.
 
 Credits to **Groosha** for the actual version
+
 Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional features
 
 
@@ -27,10 +28,10 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
 
 ####Version1.0
    * **Major Update**: 
-   1. All storing data functionality moved to MongoDB. 
-   2. Added paging to users list and blocked list.
-   3. Simplified user blocking using inline keyboards.
-   4. Code refactored and beautified.
+     1. All storing data functionality moved to MongoDB. 
+     2. Added paging to users list and blocked list.
+     3. Simplified user blocking using inline keyboards.
+     4. Code refactored and beautified.
    * **Bugs in this version**: Hopefully no
 
    
