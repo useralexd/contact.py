@@ -74,7 +74,7 @@ def command_help(message):
 `7`- /setblockmessage : set the text message that you want users to see when they are blocked
 `8`- /viewblocklist  : allows you to view the list of blocked users
 `9`- /viewuserlist  : allows you to view all non-blocked users in database\n
-*For any help and queries please contact -* [me](telegram.me/phash_bot) *or check out* [this](https://github.com/phash/proxybot)""",
+*For any help and queries please contact -* [me](telegram.me/phash_bot) *or check out* [source code](https://github.com/p-hash/proxybot)""",
         parse_mode="Markdown"
     )
 
