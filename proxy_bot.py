@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
 import telebot
-import os
 
 import model
 import db
 import config
-import dictionary
 
 # Initialize bot
 bot = telebot.TeleBot(config.token)
@@ -86,21 +84,20 @@ def command_help(message):
 # command for admin: Used to view the block message
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblockmessage"])
 def command_viewblockmessage(message):
-    with open(config.storage_blockmsg) as f:
-        if os.stat(config.storage_blockmsg).st_size == 0:
-            bot.send_message(
-                message.chat.id,
-                """*Oops!*
+    if not db.common.blockmsg:
+        bot.send_message(
+            message.chat.id,
+            """*Oops!*
 You haven't set any *Block Message* for the users.
 To set one kindly send: /setblockmessage to me""",
-                parse_mode="Markdown"
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                "`Your Block Message:`" + "\n" + f.read(),
-                parse_mode="Markdown"
-            )
+            parse_mode="Markdown"
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "`Your Block Message:`" + "\n" + db.common.blockmsg,
+            parse_mode="Markdown"
+        )
 
 
 # command for admin to set the block message that the user after getting blocked
@@ -111,7 +108,17 @@ def command_setblockmessage(message):
         "Alright now send me your text that you want the user to see when he/she is *blocked*",
         parse_mode="Markdown"
     )
-    bot.register_next_step_handler(blockmsg, lambda m: dictionary.save_msg(m, file=config.storage_blockmsg))
+    bot.register_next_step_handler(blockmsg, save_blockmsg)
+
+
+# Next step handler for saving blockmsg
+def save_blockmsg(message):
+    db.common.blockmsg = str(message.text)
+    bot.reply_to(
+        message,
+        "Thanks! " + "\n" + "*The new Block Message has been set successfully* ",
+        parse_mode="Markdown"
+    )
 
 
 # command for admin
@@ -136,21 +143,20 @@ def command_blocklist(message):
 # command for admin: Used to view your Unavailable Message
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewunavailablemessage"])
 def command_unavailablemessage(message):
-    with open(config.storage_nonavailmsg) as f:
-        if os.stat(config.storage_nonavailmsg).st_size == 0:
-            bot.send_message(
-                message.chat.id,
-                """*Oops!*
+    if not db.common.nonavailmsg:
+        bot.send_message(
+            message.chat.id,
+            """*Oops!*
 You haven't set any Unavailable message for the users.
 To set one kindly send: /setunavailablemessage to me""",
-                parse_mode="Markdown"
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                "`Your Unavailable Message:`" + "\n" + f.read(),
-                parse_mode="Markdown"
-            )
+            parse_mode="Markdown"
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "`Your Unavailable Message:`" + "\n" + db.common.nonavailmsg,
+            parse_mode="Markdown"
+        )
 
 
 # Handle always first "/start" message when new chat with your bot is created (for users other than admin)
@@ -171,7 +177,17 @@ def command_setunavailablemessage(message):
         "Alright now send me your text that you want others to see when you're *unavailable*",
         parse_mode="Markdown"
     )
-    bot.register_next_step_handler(unvb, lambda m: dictionary.save_msg(m, file=config.storage_nonavailmsg))
+    bot.register_next_step_handler(unvb, save_nonavailmsg)
+
+
+# Next step handler for saving blockmsg
+def save_nonavailmsg(message):
+    db.common.nonavailmsg = str(message.text)
+    bot.reply_to(
+        message,
+        "Thanks! " + "\n" + "*The new NonAvailable Message has been set successfully* ",
+        parse_mode="Markdown"
+    )
 
 
 # command for admin to set his/her status as available
@@ -183,7 +199,7 @@ def command_available(message):
         "Your Status has been set as *Available*",
         parse_mode="Markdown"
     )
-    dictionary.set_status(config.storage_availability, "Available")
+    db.common.availability = 'available'
 
 
 # command for admin to set his/her status as unavailable
@@ -195,15 +211,14 @@ def command_unavailable(message):
         "Your Status has been set as *Unavailable*",
         parse_mode="Markdown"
     )
-    dictionary.set_status(config.storage_availability, "Unavailable")
+    db.common.availability = 'unavailable'
 
 
 # command for the admin to check his/her current status.
 # The dictionary.check_status() method simply reads the text in the availability.txt file
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["checkstatus"])
 def command_checkstatus(message):
-    ww = dictionary.check_status(config.storage_availability)
-    if ww == "false":
+    if db.common.availability == 'available':
         bot.send_message(
             message.chat.id,
             "Your current status  is *Unavailable*",
@@ -232,8 +247,7 @@ def handle_or_block(message):
 
     # checks whether the admin has blocked that user via bot or not
     if user.blocked:
-        with open(config.storage_blockmsg) as t:
-            bot.send_message(message.chat.id, t.read())
+        bot.send_message(message.chat.id, db.common.blockmsg)
 
     else:
         # forwards the message sent by the user to the admin. Only if the user is not blocked
@@ -318,10 +332,8 @@ def handle_or_block(message):
         bot.forward_message(config.my_id, message.chat.id, message.message_id)
 
         # checks the status of the admin whether he's available or not
-        q = dictionary.check_status(config.storage_availability)
-        if q == "false":
-            with open(config.storage_nonavailmsg) as m:
-                bot.send_message(message.chat.id, m.read())
+        if db.common.availability == 'unavailable':
+            bot.send_message(message.chat.id, db.common.nonavailmsg)
 
 
 # helper function which returns text and reply_markup for user card
@@ -445,8 +457,8 @@ def my_text(message):
             bot.send_message(user_id, message.text)
             db.msg.create(message)  # log message in db
     else:
-        handle_or_block(message)  # FIXME: TEMP FOR DEBUG, REPLACE WITH FOLLOWING LINE
-        # bot.send_message(config.my_id,"No one to reply!")
+        # handle_or_block(message)  # FIXME: TEMP FOR DEBUG, REPLACE WITH FOLLOWING LINE
+        bot.send_message(config.my_id,"No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["sticker"])

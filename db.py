@@ -19,8 +19,8 @@ class __DAO:
         return [self.type(**db_rec) for db_rec in self.coll.find({})]
 
     def update(self, item):
-        rslt = self.coll.update_one({'_id': item.id}, {'$set': item.to_dic()}, upsert=True)
-        if rslt.upserted_id:
+        result = self.coll.update_one({'_id': item.id}, {'$set': item.to_dic()}, upsert=True)
+        if result.upserted_id:
             self.count += 1
 
     def delete(self, item_id):
@@ -55,6 +55,49 @@ class __MessageDAO(__DAO):
         super().__init__(coll, model.Message)
 
 
+class __CommonData(__DAO):
+    def __init__(self, coll):
+        self.coll = coll
+        try:
+            self.data = coll.find({})[0]
+        except IndexError:
+            self.data = {
+                'availability': 'available',
+                'blockmsg': "uh..oh you're blocked",
+                'nonavailmsg': "I'm sorry i'm apparently offline"
+            }
+            result = self.coll.insert_one(self.data)
+            self.data['_id'] = result.inserted_id
+
+    @property
+    def availability(self):
+        return self.data['availability']
+
+    @availability.setter
+    def availability(self, value):
+        if value in ['available', 'unavailable']:
+            self.data['availability'] = value
+        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+
+    @property
+    def blockmsg(self):
+        return self.data['blockmsg']
+
+    @blockmsg.setter
+    def blockmsg(self, value):
+        self.data['blockmsg'] = value
+        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+
+    @property
+    def nonavailmsg(self):
+        return self.data['nonavailmsg']
+
+    @nonavailmsg.setter
+    def nonavailmsg(self, value):
+        self.data['nonavailmsg'] = value
+        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+
+
 __db_client = MongoClient(config.db_auth)
 __db = __db_client[config.db_name]
 
@@ -66,4 +109,4 @@ def __get_coll(coll_name):
 
 usr = __UserDAO(__get_coll('usr'))
 msg = __MessageDAO(__get_coll('msg'))
-
+common = __CommonData(__get_coll('common'))
