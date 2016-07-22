@@ -21,12 +21,12 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
  * [Contact](#contact)
 
 ##ChangeLog!
-####Version1.1
+####Version0.2.0
    * **Major Update**: Start Message editing by `/setstartmessage`
    Start message is the fist message user sees, when he/she starts the bot.
    * **Bugs in this version**: Hopefully no
 
-####Version1.0
+####Version0.1.0
    * **Major Update**: 
      1. All storing data functionality moved to MongoDB. 
      2. Added paging to users list and blocked list.
