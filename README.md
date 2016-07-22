@@ -1,7 +1,9 @@
 #<p align="center">Telegram Proxy Bot 
 <p align="center">A simple BITM, for [Telegram](https://telegram.org/) acting as some kind of "proxy". Can use it as "virtual" second account for your purposes without revealing your "actual" identity.
 
-<p align ="center">Credits to **Groosha** for the actual version, I've simply added certain features which I thought were needed</p> <br>
+<p align ="center">Credits to **Groosha** for the actual version
+<p align ="center">Credits to **[Mr_Gigabyte](https://github.com/mrgigabyte/proxybot)** for additional features</p>
+
 
  * [ChangeLog!](#changelog)
  * [Prerequisites](#prerequisites)
@@ -18,66 +20,39 @@
  * [Contact](#contact)
 
 ##ChangeLog!
-####Version 1.4.1 (current):
-   * **Major change:** Added launch.sh and launch2.sh. Simply run launch.sh to run the bot the features added by me and launch2.sh to run the original proxy bot
-   * Fixed some small bugs.
-    
-
-####Version 1.4.0:
-   * **Major change:** Removed the database methode of storing values. 
-   * **Added:** `Reply_to_message` feature. Now Admins can see what message the user replied to. Check [In Reply to](#in-reply-to) feature
-   * Fixed some small bugs.
-
-####Version 1.3:
-   * **Major Updated:** `/setblockmessage` and `/viewblockmessage` Admins can now set a custom block message.
-   * Fixed some minor bugs.
-   * **Bugs in this version:** Sometimes the bot fails to reply the user
-  
-
-####Version 1.2:
-   * **Major Update:** 
-     * **Added:**
-         * [Available and Unavailable Feature](#available-and-unavailable-feature)
-         * `/setunavailablemessage` feature
-         * `/viewblocklist` feature
-         * `/viewnicknames` feature
-   * **Bugs in this version:** No bugs as such
-   
-
-####Version1.1:
-   * **Major Update:** Improve the blocking functionality, admins can now block a user by `/block @username/nickname`
-   * **Bugs in this version:** No bugs as such
-   
-
 ####Version1.0
-   * **Major Update**: Users can now block a user they want to by simply tapping `/block<userid>` and to unblock by `/unblock<userid>`
-   * **Bugs in this version** : The /block<userid> feature was a bit annoying (fixed in the next update)
- 
+   * **Major Update**: 
+      1. All storing data functionality moved to MongoDB. 
+      2. Added paging to users list and blocked list.
+      3. Simplified user blocking using inline keyboards.
+      4. Code refactored and beutified.
+   * **Bugs in this version** : Hopefully no
+
    
  
 ## Prerequisites
 * Python 3 (works only with Python3);
 * [pyTelegramBotAPI](https://github.com/eternnoir/pyTelegramBotAPI/) library (with bot 2.0 support);
+* [pyMongo](https://pypi.python.org/pypi/pymongo) driver and MongoDB credentials
 * Telegram account.
 * Basic Knowledge about coding of course! 
 * And the ability to read the manual patiently :D 
 
 ## How to install
 * Get your own bot's token from [@BotFather](https://telegram.me/botfather);
+* Get your MongoDB (If you don't want to install it, try online services such as [mLab](https://mlab.com/))
 * Find out your account's unique ID (you can use [ID bot](https://telegram.me/my_id_bot) or just send message via Curl or something else and get `message.chat.id` from response JSON);
 * Fill in the necessary variables in `config.py`;
 * Start bot: `bash launch.sh`
 
 ## What's new ???
-* So I thought probably getting `/block~number~` and `/unblock~number~` after every text message was a bit annoying and it increases the number of text messages received, keeping this in mind I updated the bot. Now the admin can block a user by typing `/block @username/nickname` and to unblock by `/unblock @username/nickname`<br>
-Details On how this works is down Under [Blocking and Unblocking Feature section](#blocking-and-unblocking-feature)
-* Admins can now set their status as `/available` or `/unavailable`. This means that when you will not be available bot will notify the user if he/she tries to text you by sending him your unavailable message, just like the way you have a pre-recorded message on answering machines! The bot will however forward you the message. You can set and view your unavailable message by typing `/setunavailablemessage` and `/setunavailablemessage` respectively.
-* You can now view the list of users you've blocked! By typing `/viewblocklist.` The list will contain their `@username/nickname`
+* Bot sends _usercard_ with each user's message (which increases the number of messages, i know. I hope, I'll get to it later). _Usercard_ shows all info about user. Ream more about blocking and unblocking [here](#blocking-and-unblocking-feature).
+* Admins can set their status as `/available` or `/unavailable`. This means that when you will not be available bot will notify the user if he/she tries to text you by sending him your unavailable message, just like the way you have a pre-recorded message on answering machines! The bot will however forward you the message. You can set and view your unavailable message by typing `/setunavailablemessage` and `/setunavailablemessage` respectively.
+* You can now view the list of all users bot has seen! Type `/viewuserslist`. The list will contain basic info about every user and a command to their usercard.
+* You can now view the list of users you've blocked! Type `/viewblocklist`. The list will contain basic info about every user and a command to their usercard.
 * You can check your status whether you're currently available or unavailable by typing `/checkstatus`
 * `/help` command is also there for admins to see all the available commands
-* `/viewnicknames` to view all the nicknames of the users along with their first names.
 * `/viewblockmessage` and `/setblockmessage` to view and set the block message that the user will see once he/she is blocked
-* Changed the style of storing user ids. It doesn't store the data of the users in a database anymore
 * [In Reply to](#in-reply-to) feature. Admin can now see what message the user has force replied to
 
 ## How it works
@@ -87,111 +62,30 @@ The idea of this bot is pretty simple: you just place the bot between you and th
 
 <p align="center"> ![A simple scheme of interaction](https://habrastorage.org/files/4a2/d19/753/4a2d19753eb34073bfda0b872bf228b3.png)
 
-<p align="center">![Screenshot](http://i.imgur.com/wVMZRgT.png)
+<p align="center">![Screenshot](http://i.imgur.com/YZoiTjd.png)
 
 ### Blocking and Unblocking Feature
-Alright, so after spending some time with the bot I thought `/block~number~` and `/unblock~number~` after every text was kinda annoying, so I updated the blocking feature in the bot. 
-<br>
-<br>
-I thought that it would be probably **easier and less messy** if the admin can block a user based on the username.<br>
-So, now you can block any user you want based on their @username or nickname provided by you, here's how it works:
-<br>
-<br>
-Well, the bot simply stores the data of every user it interacts with in the form of a dictionary with the key as the Username and the val or value as the `message.chat.id` of the user. And therefore whenever the admin blocks a user by entering the username the bot simply takes in the username and gets the corresponding `chat.id` out of it and stores it in the block list.
+It was messy and complicated for me in Mr_Gigabyte's implementation, so I've fully rewrited it.
 
-Now some of you might be wondering like what if the user doesn't have a username or what if the user changed his/her username ?
-Aye! we have a solution for that to but before answering that let's make a list of all the possible cases we can have.<br>
-**There can be many possibilities and chances of error, I've made sure to cover all of them but who knows o_0**
- <br>
- <br>
-**Okay!** So here are the cases: <br>
-  
-   **case 1:** user has a username and is a new user for the bot<br>
-   **case 2:** user doesnt have a username and is a new user for the bot<br>
-   **case 3:** user changed his username but is an old user for the bot<br>
-   **case 4:** user removed his username and is an old user for the bot<br>
-   **case 5:** idk that's it ? <br>
-   <br>
-   ``` python
-    if message.chat.id not in user_dir.values():    
-     if message.chat.username == None:
-        msg = bot.send_message(config.my_id, "*Uh! the user does not have a username o_0*\nCan you please suggest a name that can be used to store the data of the following user ?\n *PS: The nickname should be unique and shouldn't contain* '`@`'",parse_mode="Markdown" )
-        bot.register_next_step_handler(msg, lambda m: dictionary.process_name_step(m, dict_name=user_dir, file=config.storage_userdir, val=message.chat.id, firstname=message.chat.first_name))
-           
-     else:
-        userName = "@"+ message.chat.username
-        userName = userName.lower()
-        #checks whether the message.chat.id of the user is there in the block list (user_list)
-        #if message.chat.id present ---> sends a message to the user that he/she is blocked
-        #else forwards the message to the admin
-        if userName not in user_dir:   
-            dictionary.add_key_dict(config.storage_userdir, user_dir, userName, message.chat.id)     
-   else:
-     if message.chat.username == None:
-       for userName, chatid in user_dir.items():
-          if chatid == message.chat.id:
-              z = userName
-              if '@' in z:
-                  msg = bot.send_message(config.my_id, "*Uh! the user does not have a username o_0*\nCan you please suggest a name that can be used to store the data of the following user ?\n *PS: The nickname should be unique and shouldn't contain* '`@`'",parse_mode="Markdown" )
-                  bot.register_next_step_handler(msg, lambda m: dictionary.process_name_step(m, dict_name=user_dir, file=config.storage_userdir, val=message.chat.id, firstname=message.chat.first_name))
-     else:
-        userName = "@"+ message.chat.username
-        userName = userName.lower()
-        if userName not in user_dir:   
-            dictionary.add_key_dict(config.storage_userdir, user_dir, userName, message.chat.id) 
-```
-**Alright so let's understand the code:**
-```python
-'''
- if message.chat.id not in user_dir.values() <-- here the bot checks whether the message.chat.id of the user exists in the dict or not
-   if not: <--meaning it's a new user
-     then it checks for the username
-       if user doesnt have a username then ---> it asks the admin to give a nickname for the user to save that as key
-       else it saves the username of the new user as the key and chat.id as the val
-       We've successfully covere the cases 1 & 2 ^
-   Now if message.chat.id is present in user_dir.values() 
-   if yes: <---meaning its an old user 
-      it then checks whether the username is present or not 
-           if the user doesnt has a username (meaning the old user removed his/her username)
-           then it cross checks in the dict whether the key of the user has '@' or not
-               Now here's the tricky part: Why did I check for '@' ? Because in the case 2 we have given a nick name 
-               to the user so now assume a case :
-                     the new user opens the bot writes a text to the bot, the bot checks the chat.id of the user since it's not 
-                     there and the user doesnt has a username it will ask the admin to give a nickname. 
-                     NOW! if the user will write a text message again then since the chat.id of the user is now present in the 
-                     dict() the user will be treated as an old user with the key as the nickname. So, the else part of the code 
-                     will execute. Now! here we are only considering the old users and not the users who already have a nickname
-                     and hence to differentiate among the two we have checked for '@' symbol in the key.
-               Hence, if the user is old and doesnt have a username then it will ask the admin for the new nickname
-               We have successfully covered the case 4 ^
-            if the old user has a nickname then it checks whether the username is already present or not
-                if not: then it saves the data of the user with the key as the new username and message.chat.id as the val
-                if yes: then do nothing 
-   Hence, we have covered all the possible cases
-  '''
- ```
- 
-I hope this answered the questions and explained all the cases mentioned above, I know it's a bit complicated and a difficult way to code but idk i just didn't get any other idea. :P <br><br>
-Since we know that no one is perfect in terms of recalling the previous data, I've included the `/viewnicknames` feature as well. This well help you to view all the nick-names along with the respective first-name of the user to whom it was allotted.<br><br>
+There is a message which I call _usercard_. It has all information about user and an inline keyboard with only one button, which allows to block or unblock user. _Usercard_ can be requested by `/userNNNNNN` command, where `NNNNNN` is Telegram user\_id. Bot also send _usercard_ to admin before each user's message. A list of `/userNNNNNN` commands can be found in all users list (`/viewuserlist`) and blocked user list (`/viewblocklist`)
 
-So here are the following commands: <br>
-* `/block @username/nickname`  <-- To **block** a user<br>
-* `/unblock @username/nickname` <-- To **unblock** a user <br>
+Data storage moved from couple text files to MongoDB, which will help us to add functionality in future.
+
+So here are the commands connected to blocking: <br>
 * `/setblockmessage` <-- To **set the block text** that the user will see once he/she is blocked <br>
 * `/viewblockmessage` <-- To **view** your own block message
-* `/viewnicknames` <-- To *view* all the allotted nicknames along with the user's first-name
+* `/viewuserlist` <-- To **view** all users in a list with their `/userNNNNNN` commands
+* `/viewblocklist` <-- To **view** blocked users list with their `/userNNNNNN` commands
+* `/userNNNNNN` <-- To **view** _usercard_. `NNNNNN` here stands for Telegram user\_id
 <br>
-**Admins can even view the block list by typing** `/viewblocklist` <br>
 
 #### Screenshots:
 #####Basic Blocking Functionality:
-![screenshot](http://i.imgur.com/PSzgEDK.png)<br><br>
+![screenshot](http://i.imgur.com/wjcE4Yy.png)<br><br>
 #####Setting the blocking text:
-![screenshot](http://i.imgur.com/YwzUVEN.png)<br><br>
-#####Viewing the Block List:
-<p align="cente">![screenshot](http://i.imgur.com/CjC3S4M.png)<br><br>
-####Setting and Viewing Nicknames:
-<p align="center">![screenshot](http://i.imgur.com/E6gEQQY.png)<br><br>
+![screenshot](http://i.imgur.com/1JVLQRr.png)<br><br>
+#####Viewing the Block List and the User List:
+<p align="cente">![screenshot](http://i.imgur.com/6hXC3lR.png)<br><br>
 
 
 ### Available and Unavailable Feature
@@ -219,17 +113,17 @@ To view the unavailable message simply send:
 
 ####Screenshots :
 ##### Setting Unavailable Message :
-![screenshot](http://i.imgur.com/sVznxXE.png)<br><br>
+![screenshot](http://i.imgur.com/kVegDzP.png)<br><br>
 ##### Basic Feature :
-![screenshot](http://i.imgur.com/a4bZz3x.png)<br><br>
+![screenshot](http://i.imgur.com/uvMbmfg.png)<br><br>
 ##### Checking Status:
-<p align="center">![screenshot](http://i.imgur.com/KAtq778.png)<br><br>
+<p align="center">![screenshot](http://i.imgur.com/R3VIqfw.png)<br><br>
 
 ##In Reply To:
 Well as stated before/in the previous version. The admins were not able to see the text the user has force replied to, since the bot only forwards every new text and not the old ones.. So admin wouldn't know if the user has replied to a previously sent text or not. Now admins can see the previously send message to which the user replied.
 
 ###Screenshot:
-<p align="center">![screenshot](http://i.imgur.com/EFJs7T3.png)<br><br>
+<p align="center">![screenshot](http://i.imgur.com/uvMbmfg.png)<br><br>
 
 
 ## Notes and restrictions
@@ -240,21 +134,18 @@ bot.send_message(message.chat.id, "Please click on [this](www.google.com)to sear
 ```
 
 2. You(Admins) should **always** use "reply" function, because bot will check `message_id` of selected "message to reply".
-3. Storage is needed to save `"message_id":"user_id"` key-value pairs. First, I intended to delete `message_id` which I've already answered, but then I decided to remove this, so you can answer any message from certain user and multiple times.
+3. Database is needed to store users' statuses and log messages.
 4. Supported message types in reply: `text`, `sticker`, `photo`, `video`, `audio`, `voice`, `document`, `location`.
-5. To block a user simply type`/block @username/nickname` and to unblock a user simply type `/unblock @username/nickname`
-6. If you dont need these features then you can simply use the original version of the bot which was made by Groosha. Open the terminal and enter `bash launch2.sh`
-7. All the text files are mentioned in config.py except **blank.txt** which is used somewhere in between the code.<br>
-** I will not recommend you to change the name or the location of the text files. But it's up to you! **
-8. This bot only works in the private chats, I've tried making it work in the groups but it didn't really worked, if you can improve this bot then do let [me](https://telegram.me/mrgigabytebot) know! I would be glad to make this work better
-9. You can use the `/help` command to view all the commands which you can use an admin
-![screenshot](http://i.imgur.com/buBtWr5.png)
+5. To block a user simply tap `Block` button under his _usercard_. It will change its name to `Unblock` and user will be blocked.
+6. This bot only works in the private chats.
+7. You can use the `/help` command to view all the commands which you can use an admin
+![screenshot](http://i.imgur.com/hgWuEuz.png)
 
 ## Upcoming Features
-* I would be working on adding some more helpful features for admins and maybe for the users as well let's see :)
+* Viewing messages log per user
+* In Reply To feature for users
 * Anti-Spam Feature, limiting messages sent per-second
 * Broadcast feature for admins, they can broadcast a certain message to selected users they want
-* idk maybe more ?? haha
 
 ## Remember!
 I understand, that "proxy" bots can be used to prevent spammers from being reported, so if you encounter such bots that are used to do "bad" things, feel free to report them: [abuse@telegram.org](mailto:abuse@telegram.org)
@@ -270,5 +161,5 @@ Yes! You can use **ONLY** emojis or text in your unavailable message, you cannot
 Unfortunately nope :( 
 
 ## Contact
-You can contact me via my [Proxy Bot](https://telegram.me/mrgigabytebot).<br>
+You can contact me via my [Proxy Bot](https://telegram.me/phash_bot).<br>
 **PS: Let me know if you need a new feature/tweak in this bot, please don't hesitate to text me :)**
