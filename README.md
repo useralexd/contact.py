@@ -134,7 +134,7 @@ To view the unavailable message simply send:
 Well as stated before/in the previous version. The admins were not able to see the text the user has force replied to, since the bot only forwards every new text and not the old ones.. So admin wouldn't know if the user has replied to a previously sent text or not. Now admins can see the previously send message to which the user replied.
 
 ###Screenshot:
-<p align="center">![screenshot](http://i.imgur.com/uvMbmfg.png)<br><br>
+<p align="center">![screenshot](http://i.imgur.com/FFpAcYF.png)<br><br>
 
 
 ## Notes and restrictions
