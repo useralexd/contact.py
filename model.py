@@ -96,7 +96,7 @@ class Message(Model, types.Message):
         else:
             super().__init__(
                 kwargs['message_id'],
-                kwargs['from_user'],
+                User(**kwargs['from_user']),
                 kwargs['date'],
                 kwargs['chat'],
                 kwargs['content_type'],
@@ -125,6 +125,9 @@ class Message(Model, types.Message):
         else:
             d['text'] = 'Non text message: /msg' + short_id(self.id)
         return d
+
+    def __format__(self, format_spec):
+        return """{user}: {text}""".format(user=self.from_user.first_name, text=self.text)
 
 
 # Just adds Dictionaryable to chat
