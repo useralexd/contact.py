@@ -25,7 +25,7 @@ def short_id(value):
     s = base64.urlsafe_b64encode(time.to_bytes(6, 'big'))
     s = s[1:]
     s = s[::-1]
-    return s
+    return str(s)
 
 
 # adds Dictionaryable behavior and marks models which can be stored in db
@@ -85,28 +85,45 @@ Last name: {last}
         return self.__format__('short')  # default to short if no format_spec
 
 
-
 # Represents message, add ObjectId
 class Message(Model, types.Message):
+    pass
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.id = bson.ObjectId()
+        if args:
+            self.id = bson.ObjectId()
+            super().__init__(*args)
+        else:
+            super().__init__(
+                kwargs['message_id'],
+                kwargs['from_user'],
+                kwargs['date'],
+                kwargs['chat'],
+                kwargs['content_type'],
+                options={})
+            self.id = kwargs['_id']
+            self.text = kwargs['text']
 
     def to_dic(self):
         d = dict()
         d['_id'] = self.id
-        d['tg_id'] = self.message_id
         d['short_id'] = short_id(self.id)
-        d['from_user'] = self.from_user.id
+
+        d['message_id'] = self.message_id
+        d['from_user'] = self.from_user.to_dic()
+        d['date'] = self.date
+        d['chat'] = self.chat.to_dic()
+        d['content_type'] = self.content_type
+
         if self.from_user.id == config.my_id and self.reply_to_message:
-            d['with'] = self.reply_to_message.from_user.id
+            d['with'] = self.reply_to_message.forward_from.id
         else:
             d['with'] = self.from_user.id
 
         if self.text:
             d['text'] = self.text
         else:
-            d['text'] = 'Non text message: /m' + short_id(self.id)
+            d['text'] = 'Non text message: /msg' + short_id(self.id)
         return d
 
 

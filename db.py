@@ -56,6 +56,21 @@ class __MessageDAO(__DAO):
     def __init__(self, coll):
         super().__init__(coll, model.Message)
 
+    def get_page_with(self, user_id, page_no=0, page_size=4):
+        cursor = self.coll.find({'with': user_id})
+        count = cursor.count()
+        pages_count = count // page_size + (1 if count % page_size else 0)
+        if page_no == 0:
+            page_no = pages_count
+        return (
+            pages_count,
+            [
+                self.type(**db_rec)
+                for db_rec in
+                cursor.skip(page_size * (page_no - 1)).limit(page_size)
+            ]
+        )
+
 
 class __CommonData(__DAO):
     def __init__(self, coll):
