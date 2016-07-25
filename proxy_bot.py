@@ -10,6 +10,18 @@ import config
 bot = telebot.TeleBot(config.token)
 
 
+# helper decorator: wrapper around bot.message handler for catching all commands with specified prefix
+def my_commandset_handler(prefix):
+    def test(m):
+        return (
+            m.content_type == 'text' and
+            m.text.startswith('/' + prefix) and
+            m.chat.id == config.my_id
+        )
+    decorator = bot.message_handler(func=test)
+    return decorator
+
+
 # helper function: returns an array of InlineKeyboardButton for paginating stuff
 # prefix - string added to each callback data from the front
 # page_no - current page number
@@ -58,6 +70,7 @@ def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
     return button_row
 
 
+# helper function: returns an InlineKeyboard markup for usercard
 def get_usercard_markup(user, log_page=None, log_pages_count=None):
     markup = telebot.types.InlineKeyboardMarkup()
     if log_page is not None and log_pages_count is not None:
@@ -176,6 +189,46 @@ def save_startmsg(message):
     )
 
 
+# command for admin: Used to view your Unavailable Message
+@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewunavailablemessage"])
+def command_unavailablemessage(message):
+    if not db.common.nonavailmsg:
+        bot.send_message(
+            message.chat.id,
+            """*Oops!*
+You haven't set any Unavailable message for the users.
+To set one kindly send: /setunavailablemessage to me""",
+            parse_mode="Markdown"
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "`Your Unavailable Message:`" + "\n" + db.common.nonavailmsg,
+            parse_mode="Markdown"
+        )
+
+
+# command for admin to set the message the users will see when the admin status is set to unavailable
+@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setunavailablemessage"])
+def command_setunavailablemessage(message):
+    unvb = bot.send_message(
+        message.chat.id,
+        "Alright now send me your text that you want others to see when you're *unavailable*",
+        parse_mode="Markdown"
+    )
+    bot.register_next_step_handler(unvb, save_nonavailmsg)
+
+
+# Next step handler for saving blockmsg
+def save_nonavailmsg(message):
+    db.common.nonavailmsg = str(message.text)
+    bot.reply_to(
+        message,
+        "Thanks! " + "\n" + "*The new Unavailable Message has been set successfully* ",
+        parse_mode="Markdown"
+    )
+
+
 # command for admin
 # view the whole Block List containing usernames and nicknames of the blocked users, refer config.py for more info
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblocklist"])
@@ -196,7 +249,7 @@ def command_blocklist(message):
 # handles inline keyboard buttons under the users list
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_blocked'))
 def blocked_list_pages(cb):
-    page_no = int(cb.data.lstrip('list_blocked'))
+    page_no = int(cb.data.replace('list_blocked', '', 1))
     users = db.usr.get_page(page_no)
     s = "Blocked list: \n\n"
     for user in users:
@@ -231,7 +284,7 @@ def command_users(message):
 # handles inline keyboard buttons under the users list
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_users'))
 def user_list_pages(cb):
-    page_no = int(cb.data.lstrip('list_users'))
+    page_no = int(cb.data.replace('list_users', '', 1))
     users = db.usr.get_page(page_no)
     s = "User list: \n\n"
     for user in users:
@@ -248,10 +301,10 @@ def user_list_pages(cb):
 
 
 # a set of commands for admin to view user's cards
-@bot.message_handler(func=lambda m: m.text.startswith('/user') and m.chat.id == config.my_id, content_types=['text'])
+@my_commandset_handler('user')
 def show_user(message):
     bot.send_chat_action(message.from_user.id, action="typing")
-    uid = int(message.text.lstrip('/user').split()[0])
+    uid = int(message.text.replace('/user', '', 1).split()[0])
     user = db.usr.get_by_id(uid)
     if user:
         text = '{:full}'.format(user)
@@ -305,44 +358,13 @@ def show_log(cb):
     bot.answer_callback_query(cb.id, 'Done')
 
 
-# command for admin: Used to view your Unavailable Message
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewunavailablemessage"])
-def command_unavailablemessage(message):
-    if not db.common.nonavailmsg:
-        bot.send_message(
-            message.chat.id,
-            """*Oops!*
-You haven't set any Unavailable message for the users.
-To set one kindly send: /setunavailablemessage to me""",
-            parse_mode="Markdown"
-        )
-    else:
-        bot.send_message(
-            message.chat.id,
-            "`Your Unavailable Message:`" + "\n" + db.common.nonavailmsg,
-            parse_mode="Markdown"
-        )
-
-
-# command for admin to set the message the users will see when the admin status is set to unavailable
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setunavailablemessage"])
-def command_setunavailablemessage(message):
-    unvb = bot.send_message(
-        message.chat.id,
-        "Alright now send me your text that you want others to see when you're *unavailable*",
-        parse_mode="Markdown"
-    )
-    bot.register_next_step_handler(unvb, save_nonavailmsg)
-
-
-# Next step handler for saving blockmsg
-def save_nonavailmsg(message):
-    db.common.nonavailmsg = str(message.text)
-    bot.reply_to(
-        message,
-        "Thanks! " + "\n" + "*The new Unavailable Message has been set successfully* ",
-        parse_mode="Markdown"
-    )
+# a set of commands for admin to view special messages
+@my_commandset_handler('msg')
+def show_msg(message):
+    bot.send_chat_action(message.from_user.id, action="typing")
+    m_id = message.text.replace('/msg', '', 1).split()[0]
+    old_msg = db.msg.get_by_shortid(m_id)
+    bot.forward_message(config.my_id, old_msg.chat.id, old_msg.message_id)
 
 
 # command for admin to set his/her status as available

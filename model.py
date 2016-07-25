@@ -25,7 +25,7 @@ def short_id(value):
     s = base64.urlsafe_b64encode(time.to_bytes(6, 'big'))
     s = s[1:]
     s = s[::-1]
-    return str(s)
+    return s.decode('ascii')
 
 
 # adds Dictionaryable behavior and marks models which can be stored in db
@@ -87,8 +87,6 @@ Last name: {last}
 
 # Represents message, add ObjectId
 class Message(Model, types.Message):
-    pass
-
     def __init__(self, *args, **kwargs):
         if args:
             self.id = bson.ObjectId()
@@ -98,7 +96,7 @@ class Message(Model, types.Message):
                 kwargs['message_id'],
                 User(**kwargs['from_user']),
                 kwargs['date'],
-                kwargs['chat'],
+                Chat(**kwargs['chat']),
                 kwargs['content_type'],
                 options={})
             self.id = kwargs['_id']
@@ -132,7 +130,14 @@ class Message(Model, types.Message):
 
 # Just adds Dictionaryable to chat
 class Chat(Model, types.Chat):
-    pass
+    def to_dic(self):
+        d = {}
+        for k, v in vars(self).items():
+            if isinstance(v, Model):
+                d[k] = v.to_dic()
+            elif not str(k).startswith('_'):
+                d[k] = v
+        return d
 
 
 # Replaces classes in telepot.types

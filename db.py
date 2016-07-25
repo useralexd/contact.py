@@ -71,6 +71,11 @@ class __MessageDAO(__DAO):
             ]
         )
 
+    def get_by_shortid(self, shortid):
+        db_rec = self.coll.find_one({'short_id': shortid})
+        return self.type(**db_rec) if db_rec else None
+
+
 
 class __CommonData(__DAO):
     def __init__(self, coll):
