@@ -1,9 +1,9 @@
 #<p align="center">Telegram Proxy Bot 
 A simple BITM, for [Telegram](https://telegram.org/) acting as some kind of "proxy". Can use it as "virtual" second account for your purposes without revealing your "actual" identity.
 
-Credits to **Groosha** for the actual version
+Credits to **Groosha** for the actual version.
 
-Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional features
+Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional features.
 
 
  * [ChangeLog!](#changelog)
@@ -12,6 +12,8 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
  * [What's new ?](#whats-new-)
  * [How it works ?](#how-it-works)
     * [Basic Functionality](#basic-functionality)
+    * [Viewing Log](#viewing-log)
+    * [Setting Start Message](#setting-start-message)
     * [Blocking and Unblocking Feature](#blocking-and-unblocking-feature)
     * [Available and Unavailable Feature](#available-and-unavailable-feature)
  * [Notes and restrictions](#notes-and-restrictions)
@@ -21,9 +23,16 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
  * [Contact](#contact)
 
 ##ChangeLog!
+####Version0.3.0
+   * **Major Update**: Basic log viewing.
+   * **Bugs in this version**: 
+     1. To reply back to user, you still have to find a message forwarded from this user, and reply to it. Not a bug, but it bugs me right now.
+     2. Log looks unreadable now. Not a bug, needs beautification.
+     3. Pager buttons don't look fancy enough for me. Not a bug, too.
+     
 ####Version0.2.0
    * **Major Update**: Start Message editing by `/setstartmessage`
-   Start message is the fist message user sees, when he/she starts the bot.
+   Start message is the first message user sees, when he/she starts the bot.
    * **Bugs in this version**: Hopefully no
 
 ####Version0.1.0
@@ -39,8 +48,8 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
 ## Prerequisites
 * Python 3 (works only with Python3);
 * [pyTelegramBotAPI](https://github.com/eternnoir/pyTelegramBotAPI/) library (with bot 2.0 support);
-* [pyMongo](https://pypi.python.org/pypi/pymongo) driver and MongoDB credentials
-* Telegram account.
+* [pyMongo](https://pypi.python.org/pypi/pymongo) driver and MongoDB credentials;
+* Telegram account;
 * Basic Knowledge about coding of course! 
 * And the ability to read the manual patiently :D 
 
@@ -52,6 +61,7 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
 * Start bot: `bash launch.sh`
 
 ## What's new ???
+* You can now examine full message history with one user. Just use *Show Log* button in _usercard_.
 * You can now set Start Message the same way you do with the Block Message and Unavailable Message. New commands are `/setstartmessage` and `/viewstartmessage`
 * Bot sends _usercard_ with each user's message (which increases the number of messages, i know. I hope, I'll get to it later). _Usercard_ shows all info about user. Ream more about blocking and unblocking [here](#blocking-and-unblocking-feature).
 * Admins can set their status as `/available` or `/unavailable`. This means that when you will not be available bot will notify the user if he/she tries to text you by sending him your unavailable message, just like the way you have a pre-recorded message on answering machines! The bot will however forward you the message. You can set and view your unavailable message by typing `/setunavailablemessage` and `/setunavailablemessage` respectively.
@@ -71,7 +81,21 @@ The idea of this bot is pretty simple: you just place the bot between you and th
 
 <p align="center">![Screenshot](http://i.imgur.com/YZoiTjd.png)
 
-#### Setting Start Message
+### Viewing Log
+I've added **Show log** button to _usercard_ which turns _usercard_ into list of messages. You can read text messages right in the list. Non-text messages, such as stickers, files, photos, voice, location, etc are converted into command, which will forward you specified message.
+
+So, to view log:
+1. Find user, which log do you want to see, in list of users (`/viewuserlist`) or in list of blocked (`/viewblocklist`)
+2. Request his _usercard_ by `/userNNNNNN` command, which can be found in lists
+3. Tap **Show log** button
+
+To view non-text messages tap on `/msgABCDEF` commands which would be placeholders for non-text messages in the list.
+
+To reply back to user, you still have to find a message, which is forwarded from this user, and reply to it.
+
+![Screenshot](http://i.imgur.com/2wEvnjx.png)
+
+### Setting Start Message
 You can set Start Message -- the message, which user sees when he/she starts the bot.
 Use `/setstartmessage` command for setting it and `/viewstartmessage` for viewing it.
 
@@ -138,12 +162,7 @@ Well as stated before/in the previous version. The admins were not able to see t
 
 
 ## Notes and restrictions
-1. Message formatting (both Markdown and HTML) is disabled. You can easily add `parse_mode` argument to `send_message` function to enable it.<br>
-**example:**
-``` python 
-bot.send_message(message.chat.id, "Please click on [this](www.google.com)to search on Google",parse_mode="Markdown")
-```
-
+1. Message formatting (both Markdown and HTML) is not supported. 
 2. You(Admins) should **always** use "reply" function, because bot will check `message_id` of selected "message to reply".
 3. Database is needed to store users' statuses and log messages.
 4. Supported message types in reply: `text`, `sticker`, `photo`, `video`, `audio`, `voice`, `document`, `location`.
@@ -153,8 +172,6 @@ bot.send_message(message.chat.id, "Please click on [this](www.google.com)to sear
 ![screenshot](http://i.imgur.com/hgWuEuz.png)
 
 ## Upcoming Features
-* Viewing messages log per user
-* In Reply To feature for users
 * Anti-Spam Feature, limiting messages sent per-second
 * Broadcast feature for admins, they can broadcast a certain message to selected users they want
 
@@ -162,14 +179,11 @@ bot.send_message(message.chat.id, "Please click on [this](www.google.com)to sear
 I understand, that "proxy" bots can be used to prevent spammers from being reported, so if you encounter such bots that are used to do "bad" things, feel free to report them: [abuse@telegram.org](mailto:abuse@telegram.org)
 
 ## F.A.Q
-#### 1. Will this bot work in groups/supergroups/channels ?
+#### 1. Will this bot work in groups/supergroups/channels?
 For the time being this bot just works in private chats.
 
-#### 2. Can I use Emojis in my unavailable message ?
-Yes! You can use **ONLY** emojis or text in your unavailable message, you cannot save stickers/gifs in the unavailable message
-
-#### 3. Will I be able to skip my school/college/job ? 
-Unfortunately nope :( 
+#### 2. Can I use Emojis in my saved messages (start, block and unavailable)?
+Yes! You can use **ONLY** emojis or text in your saved messages, you cannot save stickers/gifs or any other media. Hope that links could help in your particular case.
 
 ## Contact
 You can contact me via my [Proxy Bot](https://telegram.me/phash_bot).<br>
