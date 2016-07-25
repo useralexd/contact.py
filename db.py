@@ -57,7 +57,7 @@ class __MessageDAO(__DAO):
         super().__init__(coll, model.Message)
 
     def get_page_with(self, user_id, page_no=0, page_size=4):
-        cursor = self.coll.find({'with': user_id})
+        cursor = self.coll.find({'with': user_id}).sort('_id', 1)
         count = cursor.count()
         pages_count = count // page_size + (1 if count % page_size else 0)
         if page_no == 0:
