@@ -58,6 +58,20 @@ def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
     return button_row
 
 
+def get_usercard_markup(user, log_page=None, log_pages_count=None):
+    markup = telebot.types.InlineKeyboardMarkup()
+    if log_page is not None and log_pages_count is not None:
+        markup.row(*pager_buttons('log_{}_'.format(user.id), log_page, log_pages_count))
+        markup.row(telebot.types.InlineKeyboardButton('Hide log', callback_data='user_hide_{}'.format(user.id)))
+    else:
+        markup.add(telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)))
+        if user.blocked:
+            markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_' + str(user.id)))
+        else:
+            markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_' + str(user.id)))
+    return markup
+
+
 # for the list of all the commands
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["start", "help"])
 def command_help(message):
@@ -221,7 +235,7 @@ def user_list_pages(cb):
     users = db.usr.get_page(page_no)
     s = "User list: \n\n"
     for user in users:
-        s += '{}'.format(user) + '\n'
+        s += '{}\n'.format(user)
     markup = telebot.types.InlineKeyboardMarkup()
     markup.row(*pager_buttons('list_users', page_no, db.usr.get_pages_count()))
     bot.edit_message_text(
@@ -241,11 +255,7 @@ def show_user(message):
     user = db.usr.get_by_id(uid)
     if user:
         text = '{:full}'.format(user)
-        markup = telebot.types.InlineKeyboardMarkup()
-        if user.blocked:
-            markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_' + str(user.id)))
-        else:
-            markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_' + str(user.id)))
+        markup = get_usercard_markup(user)
     else:
         text = "Invalid command"
         markup = None
@@ -255,8 +265,8 @@ def show_user(message):
 # handles inline keyboard buttons under the user_card
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('user'))
 def user_block_toggle(cb):
-    _, command, id = cb.data.split('_')
-    user = db.usr.get_by_id(int(id))  # gets user info from db
+    _, command, _id = cb.data.split('_')
+    user = db.usr.get_by_id(int(_id))  # gets user info from db
     assert user  # makes sure that user is in db
 
     if command == 'block':  # block command
@@ -265,12 +275,7 @@ def user_block_toggle(cb):
         user.blocked = False
 
     text = '{:full}'.format(user)
-    markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)))
-    if user.blocked:
-        markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_' + str(user.id)))
-    else:
-        markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_' + str(user.id)))
+    markup = get_usercard_markup(user)
 
     # edits message according to update
     bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
@@ -294,9 +299,7 @@ def show_log(cb):
     for msg in msgs:
         text += '{}\n'.format(msg)
 
-    markup = telebot.types.InlineKeyboardMarkup()
-    markup.row(*pager_buttons('log_{}_'.format(user.id), page_no, pages_count))
-    markup.row(telebot.types.InlineKeyboardButton('Hide log', callback_data='user_hide_{}'.format(user.id)))
+    markup = get_usercard_markup(user, page_no, pages_count)
 
     bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
     bot.answer_callback_query(cb.id, 'Done')
@@ -418,11 +421,7 @@ def handle_all(message):
         db.msg.create(message)  # log message in db
 
         text = '{:full}'.format(user)
-        markup = telebot.types.InlineKeyboardMarkup()
-        if user.blocked:
-            markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='un' + str(user.id)))
-        else:
-            markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='ub' + str(user.id)))
+        markup = get_usercard_markup(user)
 
         bot.send_message(config.my_id, text, reply_markup=markup)
         if message.reply_to_message:
@@ -517,7 +516,7 @@ def my_text(message):
             bot.send_message(user_id, message.text)
             db.msg.create(message)  # log message in db
     else:
-        bot.send_message(config.my_id,"No one to reply!")
+        bot.send_message(config.my_id, "No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["sticker"])
