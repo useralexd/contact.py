@@ -30,7 +30,14 @@ class __DAO:
         if self.coll.insert_one(item.to_dic()):
             self.count += 1
 
-    def _get_page(self, page_no=1, page_size=10, query={}):
+
+class __UserDAO(__DAO):
+    def __init__(self, coll):
+        super().__init__(coll, model.User)
+
+    def _get_page(self, page_no=1, page_size=10, query=None):
+        if query is None:
+            query = {}
         cursor = self.coll.find(query).skip(page_size * (page_no - 1)).limit(page_size)
         return [self.type(**db_rec) for db_rec in cursor]
 
@@ -39,11 +46,6 @@ class __DAO:
         if self.count % page_size:
             pages_count += 1
         return pages_count
-
-
-class __UserDAO(__DAO):
-    def __init__(self, coll):
-        super().__init__(coll, model.User)
 
     def get_blocked_page(self, page_no=1, page_size=10):
         return self._get_page(page_no, page_size, {'blocked': True})
@@ -76,8 +78,7 @@ class __MessageDAO(__DAO):
         return self.type(**db_rec) if db_rec else None
 
 
-
-class __CommonData(__DAO):
+class __CommonData:
     def __init__(self, coll):
         self.coll = coll
         try:
@@ -119,7 +120,6 @@ class __CommonData(__DAO):
     def nonavailmsg(self, value):
         self.data['nonavailmsg'] = value
         self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
-
 
     @property
     def startmsg(self):
