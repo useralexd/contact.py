@@ -93,6 +93,8 @@ class __CommonData:
             result = self.coll.insert_one(self.data)
             self.data['_id'] = result.inserted_id
 
+        self._replying_to = None
+
     @property
     def availability(self):
         return self.data.get('availability') or ''
@@ -129,6 +131,14 @@ class __CommonData:
     def startmsg(self, value):
         self.data['startmsg'] = value
         self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+
+    @property
+    def replying_to(self):
+        return self._replying_to  # todo: set expiration
+
+    @replying_to.setter
+    def replying_to(self, value):
+        self._replying_to = value  # todo: set expiration
 
 
 __db_client = MongoClient(config.db_auth)

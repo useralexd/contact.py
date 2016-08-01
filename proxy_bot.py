@@ -9,8 +9,6 @@ import config
 # Initialize bot
 bot = telebot.TeleBot(config.token)
 
-admin_replying_to = None
-
 
 # helper decorator: wrapper around bot.message handler for catching all commands with specified prefix
 def my_commandset_handler(prefix):
@@ -348,7 +346,7 @@ def user_list_pages(cb):
 # handles inline keyboard buttons under the user_card
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('user'))
 def user_block_toggle(cb):
-    _, command, _id = cb.data.split('_')
+    command, _id = cb.data.split('_')[1:]
     user = db.usr.get_by_id(int(_id))  # gets user info from db
     assert user  # makes sure that user is in db
 
@@ -367,7 +365,7 @@ def user_block_toggle(cb):
 
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('log'))
 def show_log(cb):
-    _, user_id, page_no = cb.data.split('_')
+    user_id, page_no = cb.data.split('_')[1:]
     user_id = int(user_id)
     page_no = int(page_no)
 
@@ -476,140 +474,93 @@ def handle_all(message):
             bot.send_message(message.chat.id, db.common.nonavailmsg)
 
 
+@bot.callback_query_handler(func=lambda cb: cb.data.startswith('reply_'))
+def reply_to(cb):
+    db.common.replying_to = int(cb.data.replace('reply_', '', 1))
+    bot.answer_callback_query(cb.id, 'Now send me a message.')
+
+
 @bot.message_handler(
     func=lambda m: m.chat.id == config.my_id and m.chat.id not in bot.message_subscribers_next_step,
     content_types=['text']
 )
 def my_text(message):
-    # If we're just sending messages to bot (not replying) -> do nothing and notify about it.
-    # Else -> get ID whom to reply and send message FROM bot.
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            user_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(user_id, action='typing')
-            bot.send_message(user_id, message.text)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='typing')
+        bot.send_message(user_id, message.text)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(config.my_id, "No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["sticker"])
 def my_sticker(message):
-    # If we're just sending messages to bot (not replying) -> do nothing and notify about it.
-    # Else -> get ID whom to reply and send message FROM bot.
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            chat_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(chat_id, action='typing')
-            bot.send_sticker(chat_id, message.sticker.file_id)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        chat_id = db.common.replying_to
+        bot.send_chat_action(chat_id, action='typing')
+        bot.send_sticker(chat_id, message.sticker.file_id)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(config.my_id, "No one to reply")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["photo"])
 def my_photo(message):
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            who_to_send_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(who_to_send_id, action='upload_photo')
-            bot.send_photo(who_to_send_id, list(message.photo)[-1].file_id)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        who_to_send_id = db.common.replying_to
+        bot.send_chat_action(who_to_send_id, action='upload_photo')
+        bot.send_photo(who_to_send_id, list(message.photo)[-1].file_id)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["voice"])
 def my_voice(message):
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            who_to_send_id = message.reply_to_message.forward_from.id
-            bot.send_voice(who_to_send_id, message.voice.file_id, duration=message.voice.duration)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        who_to_send_id = db.common.replying_to
+        bot.send_voice(who_to_send_id, message.voice.file_id, duration=message.voice.duration)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["document"])
 def my_document(message):
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            who_to_send_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(who_to_send_id, action='upload_document')
-            bot.send_document(who_to_send_id, data=message.document.file_id)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        who_to_send_id = db.common.replying_to
+        bot.send_chat_action(who_to_send_id, action='upload_document')
+        bot.send_document(who_to_send_id, data=message.document.file_id)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["audio"])
 def my_audio(message):
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            who_to_send_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(who_to_send_id, action='upload_audio')
-            bot.send_audio(
-                who_to_send_id,
-                performer=message.audio.performer,
-                audio=message.audio.file_id,
-                title=message.audio.title,
-                duration=message.audio.duration
-            )
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        who_to_send_id = db.common.replying_to
+        bot.send_chat_action(who_to_send_id, action='upload_audio')
+        bot.send_audio(
+            who_to_send_id,
+            performer=message.audio.performer,
+            audio=message.audio.file_id,
+            title=message.audio.title,
+            duration=message.audio.duration
+        )
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["video"])
 def my_video(message):
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            who_to_send_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(who_to_send_id, action='upload_video')
-            bot.send_video(who_to_send_id, data=message.video.file_id, duration=message.video.duration)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        who_to_send_id = db.common.replying_to
+        bot.send_chat_action(who_to_send_id, action='upload_video')
+        bot.send_video(who_to_send_id, data=message.video.file_id, duration=message.video.duration)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
@@ -617,18 +568,11 @@ def my_video(message):
 # No Google Maps on my phone, so this function is untested, should work fine though.
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["location"])
 def my_location(message):
-    if message.reply_to_message:
-        if not message.reply_to_message.forward_from:
-            bot.send_message(
-                config.my_id,
-                "*Oops! Something went wrong make sure you're replying to the right person!*",
-                parse_mode="Markdown"
-            )
-        else:
-            who_to_send_id = message.reply_to_message.forward_from.id
-            bot.send_chat_action(who_to_send_id, action='find_location')
-            bot.send_location(who_to_send_id, latitude=message.location.latitude, longitude=message.location.longitude)
-            db.msg.create(message)  # log message in db
+    if db.common.replying_to:
+        who_to_send_id = db.common.replying_to
+        bot.send_chat_action(who_to_send_id, action='find_location')
+        bot.send_location(who_to_send_id, latitude=message.location.latitude, longitude=message.location.longitude)
+        db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
 
