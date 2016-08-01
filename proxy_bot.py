@@ -259,6 +259,13 @@ def command_blocklist(message):
     for user in users:
         s += '{}\n'.format(user)
     markup = telebot.types.InlineKeyboardMarkup()
+    for user in users:
+        markup.add(
+            telebot.types.InlineKeyboardButton(
+                '{}'.format(user.first_name),
+                callback_data='user_show_{}'.format(user.id)
+            )
+        )
     markup.row(*pager_buttons('list_blocked', 1, db.usr.get_pages_count()))
     bot.send_message(config.my_id, s, reply_markup=markup)
 
@@ -272,6 +279,13 @@ def blocked_list_pages(cb):
     for user in users:
         s += '{}'.format(user) + '\n'
     markup = telebot.types.InlineKeyboardMarkup()
+    for user in users:
+        markup.add(
+            telebot.types.InlineKeyboardButton(
+                '{}'.format(user.first_name),
+                callback_data='user_show_{}'.format(user.id)
+            )
+        )
     markup.row(*pager_buttons('list_blocked', page_no, db.usr.get_pages_count()))
     bot.edit_message_text(
         s,
@@ -294,6 +308,13 @@ def command_users(message):
     for user in users:
         s += '{}\n'.format(user)
     markup = telebot.types.InlineKeyboardMarkup()
+    for user in users:
+        markup.add(
+            telebot.types.InlineKeyboardButton(
+                '{}'.format(user.first_name),
+                callback_data='user_show_{}'.format(user.id)
+            )
+        )
     markup.row(*pager_buttons('list_users', 1, db.usr.get_pages_count()))
     bot.send_message(config.my_id, s, reply_markup=markup)
 
@@ -307,6 +328,13 @@ def user_list_pages(cb):
     for user in users:
         s += '{}\n'.format(user)
     markup = telebot.types.InlineKeyboardMarkup()
+    for user in users:
+        markup.add(
+            telebot.types.InlineKeyboardButton(
+                '{}'.format(user.first_name),
+                callback_data='user_show_{}'.format(user.id)
+            )
+        )
     markup.row(*pager_buttons('list_users', page_no, db.usr.get_pages_count()))
     bot.edit_message_text(
         s,
@@ -315,20 +343,6 @@ def user_list_pages(cb):
         chat_id=cb.from_user.id
     )
     bot.answer_callback_query(cb.id, 'Done!')
-
-
-# a set of commands for admin to view user's cards
-@my_commandset_handler('user')
-def show_user(message):
-    bot.send_chat_action(message.from_user.id, action="typing")
-    uid = int(message.text.replace('/user', '', 1).split()[0])
-    user = db.usr.get_by_id(uid)
-    if user:
-        text, markup = get_usercard_markup(user)
-    else:
-        text = "Invalid command"
-        markup = None
-    bot.send_message(config.my_id, text, reply_markup=markup)
 
 
 # handles inline keyboard buttons under the user_card
