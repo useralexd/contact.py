@@ -31,15 +31,7 @@ def short_id(value):
 # adds Dictionaryable behavior and marks models which can be stored in db
 class Model(types.Dictionaryable):
     def to_dic(self):
-        d = {}
-        for k, v in vars(self).items():
-            if isinstance(v, Model):
-                d[k] = v.to_dic()
-            elif not str(k).startswith('_'):
-                if str(k) == 'id':
-                    k = '_id'
-                d[k] = v
-        return d
+        raise NotImplementedError()
 
 
 # Represents User and adds extra fields to telepot's class
@@ -54,6 +46,17 @@ class User(Model, types.User):
             )
         self.blocked = kwargs.get('blocked')
         super().__init__(*args)
+
+    def to_dic(self):
+        d = {}
+        for k, v in vars(self).items():
+            if isinstance(v, Model):
+                d[k] = v.to_dic()
+            elif not str(k).startswith('_'):
+                if str(k) == 'id':
+                    k = '_id'
+                d[k] = v
+        return d
 
     def update(self, data):
         assert int(self.id) == int(data.id)
@@ -92,6 +95,10 @@ class Message(Model, types.Message):
         if args:
             self.id = bson.ObjectId()
             super().__init__(*args)
+            if self.from_user.id != config.my_id:
+                self.with_user = self.from_user.id
+            else:
+                self.with_user = None
         else:
             super().__init__(
                 kwargs['message_id'],
@@ -99,9 +106,11 @@ class Message(Model, types.Message):
                 kwargs['date'],
                 Chat(**kwargs['chat']),
                 kwargs['content_type'],
-                options={})
+                options={}
+            )
             self.id = kwargs['_id']
             self.text = kwargs['text']
+            self.with_user = kwargs['with']
 
     def to_dic(self):
         d = dict()
@@ -114,15 +123,12 @@ class Message(Model, types.Message):
         d['chat'] = self.chat.to_dic()
         d['content_type'] = self.content_type
 
-        if self.from_user.id == config.my_id and self.reply_to_message:
-            d['with'] = self.reply_to_message.forward_from.id
-        else:
-            d['with'] = self.from_user.id
+        d['with'] = self.with_user
 
         if self.text:
             d['text'] = self.text
         else:
-            d['text'] = 'Non text message: /msg' + short_id(self.id)
+            d['text'] = 'Non text message: /msg' + d['short_id']
         return d
 
     def __format__(self, format_spec):

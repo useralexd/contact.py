@@ -386,30 +386,6 @@ def show_msg(message):
     bot.forward_message(config.my_id, old_msg.chat.id, old_msg.message_id)
 
 
-# command for admin to set his/her status as available
-# this will simply re-write the availability.txt file with the text "available"
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["available"])
-def command_available(message):
-    bot.send_message(
-        message.chat.id,
-        "Your Status has been set as *Available*",
-        parse_mode="Markdown"
-    )
-    db.common.availability = 'available'
-
-
-# command for admin to set his/her status as unavailable
-# this will simply re-write the availability.txt file with the text "unavailable"
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["unavailable"])
-def command_unavailable(message):
-    bot.send_message(
-        message.chat.id,
-        "Your Status has been set as *Unavailable*",
-        parse_mode="Markdown"
-    )
-    db.common.availability = 'unavailable'
-
-
 # command for the admin to check his/her current status.
 # The dictionary.check_status() method simply reads the text in the availability.txt file
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["checkstatus"])
@@ -417,13 +393,13 @@ def command_checkstatus(message):
     if db.common.availability == 'unavailable':
         bot.send_message(
             message.chat.id,
-            "Your current status  is *Unavailable*",
+            "Your current status is *Unavailable*",
             parse_mode="Markdown"
         )
     else:
         bot.send_message(
             message.chat.id,
-            "Your current status  is *Available*",
+            "Your current status is *Available*",
             parse_mode="Markdown"
         )
 
@@ -460,9 +436,12 @@ def handle_all(message):
         db.msg.create(message)  # log message in db
 
         text = 'New message from {user}:\n {msg}'.format(user=user, msg=message)
-        markup = None
-
-        # text, markup = get_usercard_markup(user, 0)  # generate usercard
+        markup = telebot.types.InlineKeyboardMarkup()
+        markup.add(
+            telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)),
+            telebot.types.InlineKeyboardButton('Block', callback_data='user_block_{}'.format(user.id)),
+            telebot.types.InlineKeyboardButton('Reply', callback_data='reply_{}'.format(user.id))
+        )
         bot.send_message(config.my_id, text, reply_markup=markup)  # send it
 
         if message.content_type != 'text':
@@ -489,6 +468,7 @@ def my_text(message):
         user_id = db.common.replying_to
         bot.send_chat_action(user_id, action='typing')
         bot.send_message(user_id, message.text)
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(config.my_id, "No one to reply!")
@@ -497,9 +477,10 @@ def my_text(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["sticker"])
 def my_sticker(message):
     if db.common.replying_to:
-        chat_id = db.common.replying_to
-        bot.send_chat_action(chat_id, action='typing')
-        bot.send_sticker(chat_id, message.sticker.file_id)
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='typing')
+        bot.send_sticker(user_id, message.sticker.file_id)
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(config.my_id, "No one to reply")
@@ -508,9 +489,10 @@ def my_sticker(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["photo"])
 def my_photo(message):
     if db.common.replying_to:
-        who_to_send_id = db.common.replying_to
-        bot.send_chat_action(who_to_send_id, action='upload_photo')
-        bot.send_photo(who_to_send_id, list(message.photo)[-1].file_id)
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='upload_photo')
+        bot.send_photo(user_id, list(message.photo)[-1].file_id)
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
@@ -519,8 +501,9 @@ def my_photo(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["voice"])
 def my_voice(message):
     if db.common.replying_to:
-        who_to_send_id = db.common.replying_to
-        bot.send_voice(who_to_send_id, message.voice.file_id, duration=message.voice.duration)
+        user_id = db.common.replying_to
+        bot.send_voice(user_id, message.voice.file_id, duration=message.voice.duration)
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
@@ -529,9 +512,10 @@ def my_voice(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["document"])
 def my_document(message):
     if db.common.replying_to:
-        who_to_send_id = db.common.replying_to
-        bot.send_chat_action(who_to_send_id, action='upload_document')
-        bot.send_document(who_to_send_id, data=message.document.file_id)
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='upload_document')
+        bot.send_document(user_id, data=message.document.file_id)
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
@@ -540,15 +524,16 @@ def my_document(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["audio"])
 def my_audio(message):
     if db.common.replying_to:
-        who_to_send_id = db.common.replying_to
-        bot.send_chat_action(who_to_send_id, action='upload_audio')
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='upload_audio')
         bot.send_audio(
-            who_to_send_id,
+            user_id,
             performer=message.audio.performer,
             audio=message.audio.file_id,
             title=message.audio.title,
             duration=message.audio.duration
         )
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
@@ -557,9 +542,10 @@ def my_audio(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["video"])
 def my_video(message):
     if db.common.replying_to:
-        who_to_send_id = db.common.replying_to
-        bot.send_chat_action(who_to_send_id, action='upload_video')
-        bot.send_video(who_to_send_id, data=message.video.file_id, duration=message.video.duration)
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='upload_video')
+        bot.send_video(user_id, data=message.video.file_id, duration=message.video.duration)
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")
@@ -569,9 +555,11 @@ def my_video(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["location"])
 def my_location(message):
     if db.common.replying_to:
-        who_to_send_id = db.common.replying_to
-        bot.send_chat_action(who_to_send_id, action='find_location')
-        bot.send_location(who_to_send_id, latitude=message.location.latitude, longitude=message.location.longitude)
+        user_id = db.common.replying_to
+        bot.send_chat_action(user_id, action='find_location')
+        bot.send_location(user_id, latitude=message.location.latitude, longitude=message.location.longitude)
+
+        message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
         bot.send_message(message.chat.id, "No one to reply!")

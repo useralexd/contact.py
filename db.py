@@ -1,5 +1,6 @@
 from pymongo import MongoClient
-from bson.objectid import ObjectId
+from time import time
+
 import model
 import config
 
@@ -94,16 +95,16 @@ class __CommonData:
             self.data['_id'] = result.inserted_id
 
         self._replying_to = None
+        self._replying_to_expiration = config.replying_expiration
+        self._availability_expiration = config.availability_expiration
+        self._last_seen = time() - self._availability_expiration
 
     @property
     def availability(self):
-        return self.data.get('availability') or ''
-
-    @availability.setter
-    def availability(self, value):
-        if value in ['available', 'unavailable']:
-            self.data['availability'] = value
-        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+        if time() - self._last_seen > self._availability_expiration:
+            return 'unavailable'
+        else:
+            return 'available'
 
     @property
     def blockmsg(self):
@@ -134,11 +135,18 @@ class __CommonData:
 
     @property
     def replying_to(self):
-        return self._replying_to  # todo: set expiration
+        if time() - self._last_seen > self._replying_to_expiration:  # if admin wasn't here for a quite long time
+            self._replying_to = None  # ignore last replying_to
+        return self._replying_to
 
     @replying_to.setter
     def replying_to(self, value):
-        self._replying_to = value  # todo: set expiration
+        self._replying_to = value
+        self._last_seen = time()
+
+    @property
+    def last_seen(self):
+        return self._last_seen
 
 
 __db_client = MongoClient(config.db_auth)
