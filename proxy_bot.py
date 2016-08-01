@@ -71,18 +71,29 @@ def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
 
 
 # helper function: returns an InlineKeyboard markup for usercard
-def get_usercard_markup(user, log_page=None, log_pages_count=None):
+def get_usercard_markup(user, log_page=None):
     markup = telebot.types.InlineKeyboardMarkup()
-    if log_page is not None and log_pages_count is not None:
+    if log_page is not None:
+        log_pages_count, msgs = db.msg.get_page_with(user.id, log_page)  # gets messages from db
+
+        if log_page == 0:
+            log_page = log_pages_count  # if page_no is not set, let it be the last page
+
+        text = 'Chat with {}:\n\n'.format(user.first_name)
+        for msg in msgs:
+            text += '{}\n'.format(msg)
+
         markup.row(*pager_buttons('log_{}_'.format(user.id), log_page, log_pages_count))
         markup.row(telebot.types.InlineKeyboardButton('Hide log', callback_data='user_hide_{}'.format(user.id)))
     else:
+        text = '{:full}'.format(user)
+
         markup.add(telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)))
         if user.blocked:
             markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_' + str(user.id)))
         else:
             markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_' + str(user.id)))
-    return markup
+    return text, markup
 
 
 # for the list of all the commands
@@ -307,8 +318,7 @@ def show_user(message):
     uid = int(message.text.replace('/user', '', 1).split()[0])
     user = db.usr.get_by_id(uid)
     if user:
-        text = '{:full}'.format(user)
-        markup = get_usercard_markup(user)
+        text, markup = get_usercard_markup(user)
     else:
         text = "Invalid command"
         markup = None
@@ -327,8 +337,7 @@ def user_block_toggle(cb):
     elif command == 'unblock':  # unblock command
         user.blocked = False
 
-    text = '{:full}'.format(user)
-    markup = get_usercard_markup(user)
+    text, markup = get_usercard_markup(user)
 
     # edits message according to update
     bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
@@ -343,16 +352,8 @@ def show_log(cb):
     page_no = int(page_no)
 
     user = db.usr.get_by_id(user_id)  # gets user info from db
-    pages_count, msgs = db.msg.get_page_with(user_id, page_no)  # gets messages from db
 
-    if page_no == 0:
-        page_no = pages_count  # if page_no is not set, let it be the last page
-
-    text = 'Chat with {}:\n\n'.format(user.first_name)
-    for msg in msgs:
-        text += '{}\n'.format(msg)
-
-    markup = get_usercard_markup(user, page_no, pages_count)
+    text, markup = get_usercard_markup(user, page_no)
 
     bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
     bot.answer_callback_query(cb.id, 'Done')
@@ -433,88 +434,19 @@ def handle_all(message):
 
     # checks whether the admin has blocked that user via bot or not
     if user.blocked:
+        # if blocked: notify user about it
         bot.send_message(message.chat.id, db.common.blockmsg)
 
     else:
-        # forwards the message sent by the user to the admin. Only if the user is not blocked
-        # checks if the user has replied to any previously send message.
-        # If yes ---> Then it checks the format and sends that text again to the admin
-        # If no ----> Then it simply forwards the message to the admin
+        # if not blocked:
         db.msg.create(message)  # log message in db
 
-        text = '{:full}'.format(user)
-        markup = get_usercard_markup(user)
+        text, markup = get_usercard_markup(user, 0)  # generate usercard
+        bot.send_message(config.my_id, text, reply_markup=markup)  # send it
 
-        bot.send_message(config.my_id, text, reply_markup=markup)
-        if message.reply_to_message:
-            if message.reply_to_message.text:
-                text = message.reply_to_message.text
-                bot.send_message(
-                    config.my_id,
-                    "<b>" + message.chat.first_name + " replied to: " + "</b>" + text,
-                    parse_mode="HTML"
-                )
-            elif message.reply_to_message.sticker:
-                m = message.reply_to_message.sticker.file_id
-                bot.send_message(
-                    config.my_id,
-                    "<b>" + message.chat.first_name + " replied to sticker" + "</b>",
-                    parse_mode="HTML"
-                )
-                bot.send_sticker(config.my_id, m)
-            elif message.reply_to_message.audio:
-                audio = message.reply_to_message.audio
-                m = audio.file_id
-                bot.send_message(
-                    config.my_id,
-                    "<b>" + message.chat.first_name + " replied to audio" + "</b>",
-                    parse_mode="HTML"
-                )
-                bot.send_audio(
-                    config.my_id,
-                    performer=audio.performer,
-                    audio=m,
-                    title=audio.title,
-                    duration=audio.duration
-                )
-            elif message.reply_to_message.document:
-                m = message.reply_to_message.document.file_id
-                bot.send_document(config.my_id, m, caption=message.chat.first_name + " replied to ")
-            elif message.reply_to_message.photo:
-                m = message.reply_to_message.photo[-1].file_id
-                bot.send_photo(config.my_id, m, caption=message.chat.first_name + " replied to ")
-            elif message.reply_to_message.video:
-                m = message.reply_to_message.video.file_id
-                bot.send_video(config.my_id, m, caption=message.chat.first_name + " replied to ")
-            elif message.reply_to_message.voice:
-                m = message.reply_to_message.voice.file_id
-                bot.send_message(
-                    config.my_id,
-                    "<b>" + message.chat.first_name + " replied to Voice Note" + "</b>",
-                    parse_mode="HTML"
-                )
-                bot.send_voice(config.my_id, m)
-            elif message.reply_to_message.location:
-                location = message.reply_to_message.location
-                bot.send_message(
-                    config.my_id,
-                    "<b>" + message.chat.first_name + " replied to Location" + "</b>",
-                    parse_mode="HTML"
-                )
-                bot.send_location(config.my_id, latitude=location.latitude, longitude=location.longitude)
-            elif message.reply_to_message.contact:
-                contact = message.reply_to_message.contact
-                m = contact[-1].file_id
-                bot.send_message(
-                    config.my_id,
-                    "<b>" + message.chat.first_name + " replied to Contact" + "</b>",
-                    parse_mode="HTML"
-                )
-                bot.send_contact(config.my_id, m, first_name=contact.first_name)
-        bot.forward_message(config.my_id, message.chat.id, message.message_id)
-
-        # checks the status of the admin whether he's available or not
+        # check the status of the admin whether he's available or not
         if db.common.availability == 'unavailable':
+            # and notify user if unavailable
             bot.send_message(message.chat.id, db.common.nonavailmsg)
 
 
