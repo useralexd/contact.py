@@ -9,6 +9,8 @@ import config
 # Initialize bot
 bot = telebot.TeleBot(config.token)
 
+admin_replying_to = None
+
 
 # helper decorator: wrapper around bot.message handler for catching all commands with specified prefix
 def my_commandset_handler(prefix):
@@ -72,27 +74,31 @@ def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
 
 # helper function: returns an InlineKeyboard markup for usercard
 def get_usercard_markup(user, log_page=None):
-    markup = telebot.types.InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup(row_width=3)
+    buttons = []
     if log_page is not None:
+        text = 'Chat with {}:\n\n'.format(user)
+
         log_pages_count, msgs = db.msg.get_page_with(user.id, log_page)  # gets messages from db
 
         if log_page == 0:
             log_page = log_pages_count  # if page_no is not set, let it be the last page
 
-        text = 'Chat with {}:\n\n'.format(user.first_name)
         for msg in msgs:
             text += '{}\n'.format(msg)
-
         markup.row(*pager_buttons('log_{}_'.format(user.id), log_page, log_pages_count))
-        markup.row(telebot.types.InlineKeyboardButton('Hide log', callback_data='user_hide_{}'.format(user.id)))
+        buttons.append(telebot.types.InlineKeyboardButton('Hide log', callback_data='user_hide_{}'.format(user.id)))
     else:
-        text = '{:full}'.format(user)
+        text = 'User:\n{:full}'.format(user)
+        buttons.append(telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)))
 
-        markup.add(telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)))
-        if user.blocked:
-            markup.add(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_' + str(user.id)))
-        else:
-            markup.add(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_' + str(user.id)))
+    if user.blocked:
+        buttons.append(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_{}'.format(user.id)))
+    else:
+        buttons.append(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_{}'.format(user.id)))
+    buttons.append(telebot.types.InlineKeyboardButton('Reply', callback_data='reply_{}'.format(user.id)))
+
+    markup.add(*buttons)
     return text, markup
 
 
@@ -441,8 +447,14 @@ def handle_all(message):
         # if not blocked:
         db.msg.create(message)  # log message in db
 
-        text, markup = get_usercard_markup(user, 0)  # generate usercard
+        text = 'New message from {user}:\n {msg}'.format(user=user, msg=message)
+        markup = None
+
+        # text, markup = get_usercard_markup(user, 0)  # generate usercard
         bot.send_message(config.my_id, text, reply_markup=markup)  # send it
+
+        if message.content_type != 'text':
+            bot.forward_message(config.my_id, message.chat.id, message.message_id)
 
         # check the status of the admin whether he's available or not
         if db.common.availability == 'unavailable':
