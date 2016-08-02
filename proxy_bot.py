@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import telebot
+from telebot import types
 import logging
 
 import model
 import db
 import config
+import strings
 
 # Initialize bot
 bot = telebot.TeleBot(config.token)
@@ -30,7 +32,7 @@ def my_commandset_handler(prefix):
 # pages_count - number of pages
 # buttons_count - how many buttons should be returned
 def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
-    marks = ['« ', '< ', '·', ' >', ' »', ' - ']
+    marks = strings.pager_marks
     buttons = {}
 
     left = page_no - (buttons_count // 2)
@@ -64,7 +66,7 @@ def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
         buttons[pages_count] = str(pages_count) + marks[4]
 
     button_row = [
-        telebot.types.InlineKeyboardButton(
+        types.InlineKeyboardButton(
             text=buttons[key],
             callback_data=prefix + (str(key) if buttons[key] != marks[5] else '')
         ) for key in sorted(buttons.keys())
@@ -74,10 +76,10 @@ def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
 
 # helper function: returns an InlineKeyboard markup for usercard
 def get_usercard_markup(user, log_page=None):
-    markup = telebot.types.InlineKeyboardMarkup(row_width=3)
+    markup = types.InlineKeyboardMarkup(row_width=3)
     buttons = []
     if log_page is not None:
-        text = 'Chat with {}:\n\n'.format(user)
+        text = strings.msg.log_header.format(user=user)
 
         log_pages_count, msgs = db.msg.get_page_with(user.id, log_page)  # gets messages from db
 
@@ -87,16 +89,16 @@ def get_usercard_markup(user, log_page=None):
         for msg in msgs:
             text += '{}\n'.format(msg)
         markup.row(*pager_buttons('log_{}_'.format(user.id), log_page, log_pages_count))
-        buttons.append(telebot.types.InlineKeyboardButton('Hide log', callback_data='user_hide_{}'.format(user.id)))
+        buttons.append(types.InlineKeyboardButton(strings.btn.hide_log, callback_data='user_hide_{}'.format(user.id)))
     else:
-        text = 'User:\n{:full}'.format(user)
-        buttons.append(telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)))
+        text = strings.msg.user_full.format(user=user)
+        buttons.append(types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(user.id)))
 
     if user.blocked:
-        buttons.append(telebot.types.InlineKeyboardButton('Unblock', callback_data='user_unblock_{}'.format(user.id)))
+        buttons.append(types.InlineKeyboardButton(strings.btn.unblock, callback_data='user_unblock_{}'.format(user.id)))
     else:
-        buttons.append(telebot.types.InlineKeyboardButton('Block', callback_data='user_block_{}'.format(user.id)))
-    buttons.append(telebot.types.InlineKeyboardButton('Reply', callback_data='reply_{}'.format(user.id)))
+        buttons.append(types.InlineKeyboardButton(strings.btn.block, callback_data='user_block_{}'.format(user.id)))
+    buttons.append(types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(user.id)))
 
     markup.add(*buttons)
     return text, markup
@@ -107,22 +109,8 @@ def get_usercard_markup(user, log_page=None):
 def command_help(message):
     bot.send_message(
         message.chat.id,
-        """*Hey """ + message.chat.first_name +
-        """!\nSo, here is a list of commands that you should keep in mind:* \n
-`1`- /available  : sets your current status as available
-`2`- /unavailable: sets your current status as unavailable
-`3`- /viewunavailablemessage : to view your Unavailable Message
-`4`- /setunavailablemessage  : set the text message that you want users to see when you're unavailable
-`5`- /checkstatus: allows your to check your current status
-`6`- /viewblockmessage: to view the block message (that the users will see)
-`7`- /setblockmessage : set the text message that you want users to see when they are blocked
-`8`- /viewblocklist  : allows you to view the list of blocked users
-`9`- /viewuserlist  : allows you to view all non-blocked users in database
-`10`- /setstartmessage  : set the text message that you want users to see when they start the bot
-`11`- /viewstartmessage  : to view the Start Message
-\n
-*For any help and queries please contact -* [me](telegram.me/phash_bot) *or check out* [source code](https://github.com/p-hash/proxybot)""",
-        parse_mode="Markdown"
+        strings.msg.help,
+        parse_mode='HTML'
     )
 
 
@@ -132,16 +120,14 @@ def command_viewblockmessage(message):
     if not db.common.blockmsg:
         bot.send_message(
             message.chat.id,
-            """*Oops!*
-You haven't set any *Block Message* for the users.
-To set one kindly send: /setblockmessage to me""",
-            parse_mode="Markdown"
+            strings.msg.blockmsg_notset,
+            parse_mode="HTML"
         )
     else:
         bot.send_message(
             message.chat.id,
-            "`Your Block Message:`" + "\n" + db.common.blockmsg,
-            parse_mode="Markdown"
+            strings.msg.blockmsg_view.format(db.common.blockmsg),
+            parse_mode="HTML"
         )
 
 
@@ -150,8 +136,8 @@ To set one kindly send: /setblockmessage to me""",
 def command_setblockmessage(message):
     blockmsg = bot.send_message(
         message.chat.id,
-        "Alright now send me your text that you want the user to see when he/she is *blocked*",
-        parse_mode="Markdown"
+        strings.msg.blockmsg_setting,
+        parse_mode="HTML"
     )
     bot.register_next_step_handler(blockmsg, save_blockmsg)
 
@@ -161,8 +147,8 @@ def save_blockmsg(message):
     db.common.blockmsg = str(message.text)
     bot.reply_to(
         message,
-        "Thanks! " + "\n" + "*The new Block Message has been set successfully* ",
-        parse_mode="Markdown"
+        strings.msg.blockmsg_set,
+        parse_mode="HTML"
     )
 
 
@@ -172,16 +158,14 @@ def command_viewstartmessage(message):
     if not db.common.startmsg:
         bot.send_message(
             message.chat.id,
-            """*Oops!*
-You haven't set any *Start Message* for the users.
-To set one kindly send: /setstartmessage to me""",
-            parse_mode="Markdown"
+            strings.msg.startmsg_notset,
+            parse_mode="HTML"
         )
     else:
         bot.send_message(
             message.chat.id,
-            "`Your Start Message:`" + "\n" + db.common.startmsg,
-            parse_mode="Markdown"
+            strings.msg.startmsg_view.format(db.common.startmsg),
+            parse_mode="HTMl"
         )
 
 
@@ -190,8 +174,8 @@ To set one kindly send: /setstartmessage to me""",
 def command_setstartmessage(message):
     startmsg = bot.send_message(
         message.chat.id,
-        "Alright now send me your text that you want the user to see when he/she *starts* the bot",
-        parse_mode="Markdown"
+        strings.msg.startmsg_setting,
+        parse_mode="HTML"
     )
     bot.register_next_step_handler(startmsg, save_startmsg)
 
@@ -201,8 +185,8 @@ def save_startmsg(message):
     db.common.startmsg = str(message.text)
     bot.reply_to(
         message,
-        "Thanks! " + "\n" + "*The new Start Message has been set successfully* ",
-        parse_mode="Markdown"
+        strings.msg.startmsg_set,
+        parse_mode="HTML"
     )
 
 
@@ -212,16 +196,14 @@ def command_unavailablemessage(message):
     if not db.common.nonavailmsg:
         bot.send_message(
             message.chat.id,
-            """*Oops!*
-You haven't set any Unavailable message for the users.
-To set one kindly send: /setunavailablemessage to me""",
-            parse_mode="Markdown"
+            strings.msg.nonavailmsg_notset,
+            parse_mode='HTML'
         )
     else:
         bot.send_message(
             message.chat.id,
-            "`Your Unavailable Message:`" + "\n" + db.common.nonavailmsg,
-            parse_mode="Markdown"
+            strings.msg.nonavailmsg_view.format(db.common.nonavailmsg),
+            parse_mode="HTML"
         )
 
 
@@ -230,8 +212,8 @@ To set one kindly send: /setunavailablemessage to me""",
 def command_setunavailablemessage(message):
     unvb = bot.send_message(
         message.chat.id,
-        "Alright now send me your text that you want others to see when you're *unavailable*",
-        parse_mode="Markdown"
+        strings.msg.nonavailmsg_setting,
+        parse_mode="HTML"
     )
     bot.register_next_step_handler(unvb, save_nonavailmsg)
 
@@ -241,82 +223,84 @@ def save_nonavailmsg(message):
     db.common.nonavailmsg = str(message.text)
     bot.reply_to(
         message,
-        "Thanks! " + "\n" + "*The new Unavailable Message has been set successfully* ",
-        parse_mode="Markdown"
+        strings.msg.nonavailmsg_set,
+        parse_mode="HTML"
     )
 
 
 # command for admin
 # view the whole Block List containing usernames and nicknames of the blocked users, refer config.py for more info
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblocklist"])
-def command_blocklist(message):
-    bot.send_chat_action(message.from_user.id, "typing")
-    if not db.usr.count:
-        bot.send_message(config.my_id, "You haven't blocked any users yet!")
-        return
-    users = db.usr.get_blocked_page()
-    s = "Blocked list: \n\n"
-    for user in users:
-        s += '{}\n'.format(user)
-    markup = telebot.types.InlineKeyboardMarkup()
-    for user in users:
+def command_blocklist(_):
+    page_no = 1
+    users = db.usr.get_blocked_page(page_no)
+    s = strings.msg.blockedlist_header
+    markup = types.InlineKeyboardMarkup()
+    for index, user in enumerate(users):
+        s += strings.msg.user_line.format(index=index, user=user)
         markup.add(
-            telebot.types.InlineKeyboardButton(
-                '{}'.format(user.first_name),
+            types.InlineKeyboardButton(
+                strings.btn.user.format(index=index, user=user),
                 callback_data='user_show_{}'.format(user.id)
             )
         )
-    markup.row(*pager_buttons('list_blocked', 1, db.usr.get_pages_count()))
-    bot.send_message(config.my_id, s, reply_markup=markup)
+    markup.row(*pager_buttons('list_blocked', page_no, db.usr.get_pages_count()))
+    bot.send_message(
+        config.my_id,
+        s,
+        parse_mode='HTML',
+        reply_markup=markup
+    )
 
 
 # handles inline keyboard buttons under the users list
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_blocked'))
 def blocked_list_pages(cb):
     page_no = int(cb.data.replace('list_blocked', '', 1))
-    users = db.usr.get_page(page_no)
-    s = "Blocked list: \n\n"
-    for user in users:
-        s += '{}'.format(user) + '\n'
-    markup = telebot.types.InlineKeyboardMarkup()
-    for user in users:
+    users = db.usr.get_blocked_page(page_no)
+    s = strings.msg.blockedlist_header
+    markup = types.InlineKeyboardMarkup()
+    for index, user in enumerate(users):
+        s += strings.msg.user_line.format(index=index, user=user)
         markup.add(
-            telebot.types.InlineKeyboardButton(
-                '{}'.format(user.first_name),
+            types.InlineKeyboardButton(
+                strings.btn.user.format(index=index, user=user),
                 callback_data='user_show_{}'.format(user.id)
             )
         )
     markup.row(*pager_buttons('list_blocked', page_no, db.usr.get_pages_count()))
     bot.edit_message_text(
         s,
+        parse_mode='HTML',
         reply_markup=markup,
         message_id=cb.message.message_id,
         chat_id=cb.from_user.id
     )
-    bot.answer_callback_query(cb.id, 'Done!')
+    bot.answer_callback_query(cb.id, strings.ans.done)
 
 
 # command for admin: lists all non-blocked users
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewuserlist"])
-def command_users(message):
-    bot.send_chat_action(message.from_user.id, "typing")
-    if not db.usr.count:
-        bot.send_message(config.my_id, "No users in database!")
-        return
-    users = db.usr.get_page()
-    s = "User list: \n\n"
-    for user in users:
-        s += '{}\n'.format(user)
-    markup = telebot.types.InlineKeyboardMarkup()
-    for user in users:
+def command_users(_):
+    page_no = 1
+    users = db.usr.get_page(page_no)
+    s = strings.msg.userlist_header
+    markup = types.InlineKeyboardMarkup()
+    for index, user in enumerate(users):
+        s += strings.msg.user_line.format(index=index, user=user)
         markup.add(
-            telebot.types.InlineKeyboardButton(
-                '{}'.format(user.first_name),
+            types.InlineKeyboardButton(
+                strings.btn.user.format(index=index, user=user),
                 callback_data='user_show_{}'.format(user.id)
             )
         )
-    markup.row(*pager_buttons('list_users', 1, db.usr.get_pages_count()))
-    bot.send_message(config.my_id, s, reply_markup=markup)
+    markup.row(*pager_buttons('list_users', page_no, db.usr.get_pages_count()))
+    bot.send_message(
+        config.my_id,
+        s,
+        parse_mode='HTML',
+        reply_markup=markup
+    )
 
 
 # handles inline keyboard buttons under the users list
@@ -324,25 +308,25 @@ def command_users(message):
 def user_list_pages(cb):
     page_no = int(cb.data.replace('list_users', '', 1))
     users = db.usr.get_page(page_no)
-    s = "User list: \n\n"
-    for user in users:
-        s += '{}\n'.format(user)
-    markup = telebot.types.InlineKeyboardMarkup()
-    for user in users:
+    s = strings.msg.userlist_header
+    markup = types.InlineKeyboardMarkup()
+    for index, user in enumerate(users):
+        s += strings.msg.user_line.format(index=index, user=user)
         markup.add(
-            telebot.types.InlineKeyboardButton(
-                '{}'.format(user.first_name),
+            types.InlineKeyboardButton(
+                strings.btn.user.format(index=index, user=user),
                 callback_data='user_show_{}'.format(user.id)
             )
         )
     markup.row(*pager_buttons('list_users', page_no, db.usr.get_pages_count()))
     bot.edit_message_text(
         s,
+        parse_mode='HTML',
         reply_markup=markup,
         message_id=cb.message.message_id,
         chat_id=cb.from_user.id
     )
-    bot.answer_callback_query(cb.id, 'Done!')
+    bot.answer_callback_query(cb.id, strings.ans.done)
 
 
 # handles inline keyboard buttons under the user_card
@@ -354,14 +338,22 @@ def user_block_toggle(cb):
 
     if command == 'block':  # block command
         user.blocked = True
+        bot.answer_callback_query(cb.id, strings.ans.blocked)
     elif command == 'unblock':  # unblock command
         user.blocked = False
+        bot.answer_callback_query(cb.id, strings.ans.unblocked)
+    else:
+        bot.answer_callback_query(cb.id, strings.ans.done)
 
-    text, markup = get_usercard_markup(user)
+    text, markup = get_usercard_markup(user)  # edits message according to update
+    bot.edit_message_text(
+        text,
+        parse_mode='HTML',
+        reply_markup=markup,
+        message_id=cb.message.message_id,
+        chat_id=cb.from_user.id
+    )
 
-    # edits message according to update
-    bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
-    bot.answer_callback_query(cb.id, 'Done')
     db.usr.update(user)  # pushes changes to db
 
 
@@ -375,8 +367,14 @@ def show_log(cb):
 
     text, markup = get_usercard_markup(user, page_no)
 
-    bot.edit_message_text(text, reply_markup=markup, message_id=cb.message.message_id, chat_id=cb.from_user.id)
-    bot.answer_callback_query(cb.id, 'Done')
+    bot.edit_message_text(
+        text,
+        parse_mode='HTML',
+        reply_markup=markup,
+        message_id=cb.message.message_id,
+        chat_id=cb.from_user.id
+    )
+    bot.answer_callback_query(cb.id, strings.ans.done)
 
 
 # a set of commands for admin to view special messages
@@ -395,14 +393,14 @@ def command_checkstatus(message):
     if db.common.availability == 'unavailable':
         bot.send_message(
             message.chat.id,
-            "Your current status is *Unavailable*",
-            parse_mode="Markdown"
+            strings.msg.checked_unavailable,
+            parse_mode='HTML'
         )
     else:
         bot.send_message(
             message.chat.id,
-            "Your current status is *Available*",
-            parse_mode="Markdown"
+            strings.msg.checked_available,
+            parse_mode='HTML'
         )
 
 
@@ -411,7 +409,7 @@ def command_checkstatus(message):
 def command_start_all(message):
     bot.send_message(
         message.chat.id,
-        "Hey " + message.chat.first_name + "!\n" + db.common.startmsg
+        db.common.startmsg.format(name=message.from_user.first_name)
     )
 
 
@@ -437,14 +435,19 @@ def handle_all(message):
         # if not blocked:
         db.msg.create(message)  # log message in db
 
-        text = 'New message from {user}:\n {msg}'.format(user=user, msg=message)
-        markup = telebot.types.InlineKeyboardMarkup()
+        text = strings.msg.new_msg.format(user=user, message=message)
+        markup = types.InlineKeyboardMarkup()
         markup.add(
-            telebot.types.InlineKeyboardButton('Show Log', callback_data='log_{}_0'.format(user.id)),
-            telebot.types.InlineKeyboardButton('Block', callback_data='user_block_{}'.format(user.id)),
-            telebot.types.InlineKeyboardButton('Reply', callback_data='reply_{}'.format(user.id))
+            types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(user.id)),
+            types.InlineKeyboardButton(strings.btn.block, callback_data='user_block_{}'.format(user.id)),
+            types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(user.id))
         )
-        bot.send_message(config.my_id, text, reply_markup=markup)  # send it
+        bot.send_message(  # send it to admin
+            config.my_id,
+            text,
+            parse_mode='HTML',
+            reply_markup=markup
+        )
 
         if message.content_type != 'text':
             bot.forward_message(config.my_id, message.chat.id, message.message_id)
@@ -458,7 +461,7 @@ def handle_all(message):
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('reply_'))
 def reply_to(cb):
     db.common.replying_to = int(cb.data.replace('reply_', '', 1))
-    bot.answer_callback_query(cb.id, 'Now send me a message.')
+    bot.answer_callback_query(cb.id, strings.ans.reply)
 
 
 @bot.message_handler(
@@ -473,7 +476,7 @@ def my_text(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(config.my_id, "No one to reply!")
+        bot.send_message(config.my_id, strings.msg.noone_to_reply)
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["sticker"])
@@ -485,7 +488,7 @@ def my_sticker(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(config.my_id, "No one to reply")
+        bot.send_message(config.my_id, strings.msg.noone_to_reply)
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["photo"])
@@ -497,7 +500,7 @@ def my_photo(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, "No one to reply!")
+        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["voice"])
@@ -508,7 +511,7 @@ def my_voice(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, "No one to reply!")
+        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["document"])
@@ -520,7 +523,7 @@ def my_document(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, "No one to reply!")
+        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["audio"])
@@ -538,7 +541,7 @@ def my_audio(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, "No one to reply!")
+        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["video"])
@@ -550,7 +553,7 @@ def my_video(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, "No one to reply!")
+        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
 # No Google Maps on my phone, so this function is untested, should work fine though.
@@ -564,11 +567,12 @@ def my_location(message):
         message.with_user = user_id  # mark message as belonging to conversation with specified user
         db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, "No one to reply!")
+        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
-print('Bot has Started\nPlease text the bot on:@{}'.format(bot.get_me().username))
+username = bot.get_me().username
+print('Bot has Started\nPlease text the bot on: @{0}\nhttps://telegram.me/{0}'.format(username))
 model.replace_classes()  # replaces classes in telepot.types in order to make them db compatible
-bot.send_message(config.my_id, 'Bot Started')
+bot.send_message(config.my_id, strings.msg.bot_started)
 if __name__ == '__main__':
     bot.polling(none_stop=True)
