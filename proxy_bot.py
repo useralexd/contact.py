@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import telebot
+import logging
 
 import model
 import db
@@ -8,6 +9,7 @@ import config
 
 # Initialize bot
 bot = telebot.TeleBot(config.token)
+telebot.logger.setLevel(logging.WARNING)
 
 
 # helper decorator: wrapper around bot.message handler for catching all commands with specified prefix
