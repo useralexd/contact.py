@@ -31,44 +31,55 @@ def my_commandset_handler(prefix):
 # page_no - current page number
 # pages_count - number of pages
 # buttons_count - how many buttons should be returned
-def pager_buttons(prefix, page_no, pages_count, buttons_count=5):
+def pager_buttons(prefix, page_no, pages_count):
+    if pages_count < 2:
+        pages_count = 1
+    if page_no < 1:
+        page_no = 1
+    if page_no > pages_count:
+        page_no = pages_count
+
     marks = strings.pager_marks
+    buttons_count = 5  # odd numbers recommended
     buttons = {}
 
-    left = page_no - (buttons_count // 2)
-    right = page_no + (buttons_count // 2)
-    if pages_count >= buttons_count:
+    if pages_count > buttons_count:
+        left = page_no - (buttons_count // 2)
+        right = page_no + (buttons_count // 2)
+
         if left < 1:
             left = 1
-        if left == 1:
             right = buttons_count
         if right > pages_count:
             right = pages_count
-        if right == pages_count:
             left = pages_count - buttons_count + 1
 
-    for i in range(left, right + 1):
-        if 0 < i <= pages_count:
+        for i in range(left, right + 1):
             if i < page_no:
                 buttons[i] = marks[1] + str(i)
+            elif i == page_no:
+                buttons[i] = marks[2] + str(i) + marks[2]
+            elif i > page_no:
+                buttons[i] = str(i) + marks[3]
+
+        if buttons[left].startswith(marks[1]):
+            del buttons[left]
+            buttons[1] = marks[0] + '1'
+        if buttons[right].endswith(marks[3]):
+            del buttons[right]
+            buttons[pages_count] = str(pages_count) + marks[4]
+
+    else:
+        for i in range(1, pages_count + 1):
             if i == page_no:
                 buttons[i] = marks[2] + str(i) + marks[2]
-            if i > page_no:
-                buttons[i] = str(i) + marks[3]
-        else:
-            buttons[i] = marks[5]
-
-    if buttons[left].startswith(marks[1]):
-        del buttons[left]
-        buttons[1] = marks[0] + '1'
-    if buttons[right].endswith(marks[3]):
-        del buttons[right]
-        buttons[pages_count] = str(pages_count) + marks[4]
+            else:
+                buttons[i] = str(i)
 
     button_row = [
         types.InlineKeyboardButton(
             text=buttons[key],
-            callback_data=prefix + (str(key) if buttons[key] != marks[5] else '')
+            callback_data=prefix + str(key)
         ) for key in sorted(buttons.keys())
         ]
     return button_row

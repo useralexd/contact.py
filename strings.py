@@ -70,4 +70,4 @@ class ans:
     unblocked = 'User unblocked!'
 
 
-pager_marks = ['« ', '< ', '·', ' >', ' »', ' - ']
+pager_marks = ['« ', '< ', '·', ' >', ' »']
