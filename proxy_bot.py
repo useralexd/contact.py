@@ -244,7 +244,7 @@ def save_nonavailmsg(message):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblocklist"])
 def command_blocklist(_):
     page_no = 1
-    users = db.usr.get_blocked_page(page_no)
+    pages_count, users = db.usr.get_blocked_page(page_no)
     s = strings.msg.blockedlist_header
     markup = types.InlineKeyboardMarkup()
     for index, user in enumerate(users):
@@ -255,7 +255,7 @@ def command_blocklist(_):
                 callback_data='user_show_{}'.format(user.id)
             )
         )
-    markup.row(*pager_buttons('list_blocked', page_no, db.usr.get_pages_count()))
+    markup.row(*pager_buttons('list_blocked', page_no, pages_count))
     bot.send_message(
         config.my_id,
         s,
@@ -268,7 +268,7 @@ def command_blocklist(_):
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_blocked'))
 def blocked_list_pages(cb):
     page_no = int(cb.data.replace('list_blocked', '', 1))
-    users = db.usr.get_blocked_page(page_no)
+    pages_count, users = db.usr.get_blocked_page(page_no)
     s = strings.msg.blockedlist_header
     markup = types.InlineKeyboardMarkup()
     for index, user in enumerate(users):
@@ -279,7 +279,7 @@ def blocked_list_pages(cb):
                 callback_data='user_show_{}'.format(user.id)
             )
         )
-    markup.row(*pager_buttons('list_blocked', page_no, db.usr.get_pages_count()))
+    markup.row(*pager_buttons('list_blocked', page_no, pages_count))
     bot.edit_message_text(
         s,
         parse_mode='HTML',
@@ -294,7 +294,7 @@ def blocked_list_pages(cb):
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewuserlist"])
 def command_users(_):
     page_no = 1
-    users = db.usr.get_page(page_no)
+    pages_count, users = db.usr.get_page(page_no)
     s = strings.msg.userlist_header
     markup = types.InlineKeyboardMarkup()
     for index, user in enumerate(users):
@@ -305,7 +305,7 @@ def command_users(_):
                 callback_data='user_show_{}'.format(user.id)
             )
         )
-    markup.row(*pager_buttons('list_users', page_no, db.usr.get_pages_count()))
+    markup.row(*pager_buttons('list_users', page_no, pages_count))
     bot.send_message(
         config.my_id,
         s,
@@ -318,7 +318,7 @@ def command_users(_):
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_users'))
 def user_list_pages(cb):
     page_no = int(cb.data.replace('list_users', '', 1))
-    users = db.usr.get_page(page_no)
+    pages_count, users = db.usr.get_page(page_no)
     s = strings.msg.userlist_header
     markup = types.InlineKeyboardMarkup()
     for index, user in enumerate(users):
@@ -329,7 +329,7 @@ def user_list_pages(cb):
                 callback_data='user_show_{}'.format(user.id)
             )
         )
-    markup.row(*pager_buttons('list_users', page_no, db.usr.get_pages_count()))
+    markup.row(*pager_buttons('list_users', page_no, pages_count))
     bot.edit_message_text(
         s,
         parse_mode='HTML',
@@ -581,9 +581,9 @@ def my_location(message):
         bot.send_message(message.chat.id, strings.msg.noone_to_reply)
 
 
-username = bot.get_me().username
-print('Bot has Started\nPlease text the bot on: @{0}\nhttps://telegram.me/{0}'.format(username))
 model.replace_classes()  # replaces classes in telepot.types in order to make them db compatible
-bot.send_message(config.my_id, strings.msg.bot_started)
 if __name__ == '__main__':
+    username = bot.get_me().username
+    print('Bot has Started\nPlease text the bot on: @{0}\nhttps://telegram.me/{0}'.format(username))
+    bot.send_message(config.my_id, strings.msg.bot_started)
     bot.polling(none_stop=True)

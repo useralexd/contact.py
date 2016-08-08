@@ -44,7 +44,7 @@ class User(Model, types.User):
                 kwargs.get('last_name'),
                 kwargs.get('username'),
             )
-        self.blocked = kwargs.get('blocked')
+        self.blocked = kwargs.get('blocked') or False
         super().__init__(*args)
 
     def to_dic(self):
