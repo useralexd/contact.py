@@ -62,6 +62,7 @@ You can use <code>{name}</code> in place of user's first name.'''
     blockmsg_view = '<code>Your Block Message:</code>\n{}'
     blockmsg_notset = '<code>Block message is not set.</code>'
 
+    invalid_content_type = 'Invalid content type'
 
 class ans:
     done = 'Done!'

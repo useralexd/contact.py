@@ -472,75 +472,34 @@ def handle_all(message):
 @bot.callback_query_handler(func=lambda cb: cb.data.startswith('reply_'))
 def reply_to(cb):
     db.common.replying_to = int(cb.data.replace('reply_', '', 1))
+    bot.register_next_step_handler(cb.message, send_reply)
     bot.answer_callback_query(cb.id, strings.ans.reply)
 
 
-@bot.message_handler(
-    func=lambda m: m.chat.id == config.my_id and m.chat.id not in bot.message_subscribers_next_step,
-    content_types=['text']
-)
-def my_text(message):
+# handles admin's replies
+def send_reply(message):
     if db.common.replying_to:
         user_id = db.common.replying_to
+    else:
+        bot.send_message(config.my_id, strings.msg.noone_to_reply)
+        return
+
+    if message.content_type == 'text':
         bot.send_chat_action(user_id, action='typing')
         bot.send_message(user_id, message.text)
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(config.my_id, strings.msg.noone_to_reply)
-
-
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["sticker"])
-def my_sticker(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "sticker":
         bot.send_chat_action(user_id, action='typing')
         bot.send_sticker(user_id, message.sticker.file_id)
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(config.my_id, strings.msg.noone_to_reply)
-
-
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["photo"])
-def my_photo(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "photo":
         bot.send_chat_action(user_id, action='upload_photo')
         bot.send_photo(user_id, list(message.photo)[-1].file_id)
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
-
-
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["voice"])
-def my_voice(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "voice":
+        bot.send_chat_action(user_id, action='record_audio')
         bot.send_voice(user_id, message.voice.file_id, duration=message.voice.duration)
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
-
-
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["document"])
-def my_document(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "document":
         bot.send_chat_action(user_id, action='upload_document')
         bot.send_document(user_id, data=message.document.file_id)
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
-
-
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["audio"])
-def my_audio(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "audio":
         bot.send_chat_action(user_id, action='upload_audio')
         bot.send_audio(
             user_id,
@@ -549,39 +508,22 @@ def my_audio(message):
             title=message.audio.title,
             duration=message.audio.duration
         )
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
-
-
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["video"])
-def my_video(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "video":
         bot.send_chat_action(user_id, action='upload_video')
         bot.send_video(user_id, data=message.video.file_id, duration=message.video.duration)
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
-    else:
-        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
-
-
-# No Google Maps on my phone, so this function is untested, should work fine though.
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, content_types=["location"])
-def my_location(message):
-    if db.common.replying_to:
-        user_id = db.common.replying_to
+    elif message.content_type == "location":
+        # No Google Maps on my phone, so this code is untested, should work fine though
         bot.send_chat_action(user_id, action='find_location')
         bot.send_location(user_id, latitude=message.location.latitude, longitude=message.location.longitude)
-
-        message.with_user = user_id  # mark message as belonging to conversation with specified user
-        db.msg.create(message)  # log message in db
     else:
-        bot.send_message(message.chat.id, strings.msg.noone_to_reply)
+        bot.send_message(config.my_id, strings.msg.invalid_content_type)
+
+    message.with_user = user_id  # mark message as belonging to conversation with specified user
+    db.msg.create(message)  # log message in db
+    db.common.update_last_seen()
 
 
-model.replace_classes()  # replaces classes in telepot.types in order to make them db compatible
+model.replace_classes()  # replaces classes in telebot.types in order to make them db compatible
 if __name__ == '__main__':
     username = bot.get_me().username
     print('Bot has Started\nPlease text the bot on: @{0}\nhttps://telegram.me/{0}'.format(username))

@@ -123,7 +123,7 @@ class Chat(Model, types.Chat):
         return d
 
 
-# Replaces classes in telepot.types
+# Replaces classes in telebot.types
 def replace_classes():
     types.User = User
     types.Message = Message

@@ -104,7 +104,7 @@ class __CommonData:
         self._replying_to = None
         self._replying_to_expiration = config.replying_expiration
         self._availability_expiration = config.availability_expiration
-        self._last_seen = time() - self._availability_expiration
+        self._last_seen = time() - self._availability_expiration  # default to unavailable
 
     @property
     def availability(self):
@@ -149,6 +149,8 @@ class __CommonData:
     @replying_to.setter
     def replying_to(self, value):
         self._replying_to = value
+
+    def update_last_seen(self):
         self._last_seen = time()
 
     @property
