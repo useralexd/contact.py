@@ -93,10 +93,7 @@ class __CommonData:
             self.data = coll.find({})[0]
         except IndexError:
             self.data = {
-                'availability': 'available',
-                'blockmsg': "uh..oh you're blocked",
-                'nonavailmsg': "I'm sorry i'm apparently offline",
-                'startmsg': " Write me your text and the admin will get in touch with you shortly."
+                'messages': dict()
             }
             result = self.coll.insert_one(self.data)
             self.data['_id'] = result.inserted_id
@@ -114,31 +111,23 @@ class __CommonData:
             return 'available'
 
     @property
-    def blockmsg(self):
-        return self.data.get('blockmsg') or ''
+    def messages(self):
+        return self.data['messages']
 
-    @blockmsg.setter
-    def blockmsg(self, value):
-        self.data['blockmsg'] = value
+    def save(self):
         self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+
+    @property
+    def blockmsg(self):
+        return self.data['messages'].get('block') or ''
 
     @property
     def nonavailmsg(self):
-        return self.data.get('nonavailmsg') or ''
-
-    @nonavailmsg.setter
-    def nonavailmsg(self, value):
-        self.data['nonavailmsg'] = value
-        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+        return self.data['messages'].get('unavailable') or ''
 
     @property
     def startmsg(self):
-        return self.data.get('startmsg')
-
-    @startmsg.setter
-    def startmsg(self, value):
-        self.data['startmsg'] = value
-        self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
+        return self.data['messages'].get('start')
 
     @property
     def replying_to(self):
@@ -156,6 +145,9 @@ class __CommonData:
     @property
     def last_seen(self):
         return self._last_seen
+
+    state = 'none'
+    prev_msg = None
 
 
 __db_client = MongoClient(config.db_auth)

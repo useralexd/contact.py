@@ -118,125 +118,152 @@ def get_usercard_markup(user, log_page=None):
 # for the list of all the commands
 @bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["start", "help"])
 def command_help(message):
-    bot.send_message(
-        message.chat.id,
-        strings.msg.help,
-        parse_mode='HTML'
-    )
-
-
-# command for admin: Used to view the block message
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewblockmessage"])
-def command_viewblockmessage(message):
-    if not db.common.blockmsg:
+    if db.common.messages:
         bot.send_message(
-            message.chat.id,
-            strings.msg.blockmsg_notset,
-            parse_mode="HTML"
+            config.my_id,
+            strings.msg.help.format(first_name=message.from_user.first_name),
+            parse_mode='HTML'
         )
     else:
-        bot.send_message(
-            message.chat.id,
-            strings.msg.blockmsg_view.format(db.common.blockmsg),
-            parse_mode="HTML"
+        master_start(message)
+
+
+@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=['messages'])
+def master_start(_):
+    db.common.state = 'set_start'
+    send_state()
+
+
+@bot.message_handler(func=lambda m: db.common.state.startswith('set'))
+def master_step(message):
+    if message.content_type == 'text':
+        msg_type = db.common.state.split('_')[1]
+        old_msg = db.common.messages.get(msg_type)
+        new_msg = str(message.text)
+        db.common.messages[msg_type] = new_msg  # save to db
+        db.common.save()
+        prev_step_msg = db.common.prev_msg
+
+        # edit previous
+        if old_msg:
+            text = strings.msg.master_edited.format(
+                msg_type=msg_type,
+                old_msg=old_msg,
+                new_msg=new_msg
+            )
+        else:
+            text = strings.msg.master_set.format(
+                msg_type=msg_type,
+                new_msg=new_msg
+            )
+        bot.edit_message_text(
+            text,
+            chat_id=prev_step_msg.chat.id,
+            message_id=prev_step_msg.message_id,
+            reply_markup=None,
+            parse_mode='HTML'
         )
 
+        # set state
+        db.common.state = {
+            'set_start': 'set_unavailable',
+            'set_unavailable': 'set_block',
+            'set_block': 'none'
+        }[db.common.state]
 
-# command for admin to set the block message that the user see after getting blocked
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setblockmessage"])
-def command_setblockmessage(message):
-    blockmsg = bot.send_message(
-        message.chat.id,
-        strings.msg.blockmsg_setting,
-        parse_mode="HTML"
-    )
-    bot.register_next_step_handler(blockmsg, save_blockmsg)
-
-
-# Next step handler for saving blockmsg
-def save_blockmsg(message):
-    db.common.blockmsg = str(message.text)
-    bot.reply_to(
-        message,
-        strings.msg.blockmsg_set,
-        parse_mode="HTML"
-    )
-
-
-# command for admin: Used to view the start message
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewstartmessage"])
-def command_viewstartmessage(message):
-    if not db.common.startmsg:
-        bot.send_message(
-            message.chat.id,
-            strings.msg.startmsg_notset,
-            parse_mode="HTML"
-        )
+        send_state()
     else:
-        bot.send_message(
-            message.chat.id,
-            strings.msg.startmsg_view.format(db.common.startmsg),
-            parse_mode="HTMl"
-        )
+        bot.reply_to(message, strings.msg.invalid_content_type)
 
 
-# command for admin to set the start message that the user see when he starts the bot
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setstartmessage"])
-def command_setstartmessage(message):
-    startmsg = bot.send_message(
-        message.chat.id,
-        strings.msg.startmsg_setting,
-        parse_mode="HTML"
-    )
-    bot.register_next_step_handler(startmsg, save_startmsg)
+def send_state():
+    if db.common.state.startswith('set'):
+        msg_type = db.common.state.split('_')[1]
+        markup = types.InlineKeyboardMarkup()
+        buttons = list()
+        if msg_type != 'start':
+            buttons.append(types.InlineKeyboardButton(strings.btn.back, callback_data='back'))
 
+        if db.common.messages.get(msg_type):
+            text = strings.msg.master_step.format(
+                msg_type=msg_type,
+                msg=db.common.messages[msg_type]
+            )
+            buttons.append(types.InlineKeyboardButton(strings.btn.skip, callback_data='skip'))
+        else:
+            text = strings.msg.master_notset.format(msg_type=msg_type)
 
-# Next step handler for saving blockmsg
-def save_startmsg(message):
-    db.common.startmsg = str(message.text)
-    bot.reply_to(
-        message,
-        strings.msg.startmsg_set,
-        parse_mode="HTML"
-    )
-
-
-# command for admin: Used to view your Unavailable Message
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["viewunavailablemessage"])
-def command_unavailablemessage(message):
-    if not db.common.nonavailmsg:
-        bot.send_message(
-            message.chat.id,
-            strings.msg.nonavailmsg_notset,
+        markup.add(*buttons)
+        db.common.prev_msg = bot.send_message(
+            config.my_id,
+            text,
+            reply_markup=markup,
             parse_mode='HTML'
         )
     else:
         bot.send_message(
-            message.chat.id,
-            strings.msg.nonavailmsg_view.format(db.common.nonavailmsg),
-            parse_mode="HTML"
+            config.my_id,
+            strings.msg.master_done,
+            parse_mode='HTML'
+        )
+        db.common.prev_msg = None
+
+
+@bot.callback_query_handler(func=lambda cb: cb.data == 'skip')
+def master_skip(cb):
+    if cb.message.message_id == db.common.prev_msg.message_id:
+        msg_type = db.common.state.split('_')[1]
+        old_msg = db.common.messages.get(msg_type)
+        bot.edit_message_text(
+            strings.msg.master_skipped.format(
+                msg_type=msg_type,
+                msg=old_msg
+            ),
+            chat_id=cb.message.chat.id,
+            message_id=cb.message.message_id,
+            reply_markup=None,
+            parse_mode='HTML'
         )
 
+        # set state
+        db.common.state = {
+            'set_start': 'set_unavailable',
+            'set_unavailable': 'set_block',
+            'set_block': 'none'
+        }[db.common.state]
 
-# command for admin to set the message the users will see when the admin status is set to unavailable
-@bot.message_handler(func=lambda message: message.chat.id == config.my_id, commands=["setunavailablemessage"])
-def command_setunavailablemessage(message):
-    unvb = bot.send_message(
-        message.chat.id,
-        strings.msg.nonavailmsg_setting,
-        parse_mode="HTML"
-    )
-    bot.register_next_step_handler(unvb, save_nonavailmsg)
+        send_state()
+        bot.answer_callback_query(cb.id, strings.ans.skipped)
+    else:
+        bot.answer_callback_query(cb.id, strings.ans.error)
 
 
-# Next step handler for saving blockmsg
-def save_nonavailmsg(message):
-    db.common.nonavailmsg = str(message.text)
-    bot.reply_to(
-        message,
-        strings.msg.nonavailmsg_set,
-        parse_mode="HTML"
-    )
+@bot.callback_query_handler(func=lambda cb: cb.data == 'back')
+def master_back(cb):
+    if cb.message.message_id == db.common.prev_msg.message_id:
+        msg_type = db.common.state.split('_')[1]
+        old_msg = db.common.messages.get(msg_type)
+        bot.edit_message_text(
+            strings.msg.master_skipped.format(
+                msg_type=msg_type,
+                msg=old_msg
+            ),
+            chat_id=cb.message.chat.id,
+            message_id=cb.message.message_id,
+            reply_markup=None,
+            parse_mode='HTML'
+        )
+
+        # set state
+        db.common.state = {
+            'set_unavailable': 'set_start',
+            'set_block': 'set_unavailable'
+        }[db.common.state]
+
+        send_state()
+        bot.answer_callback_query(cb.id, strings.ans.returned)
+    else:
+        bot.answer_callback_query(cb.id, strings.ans.error)
 
 
 # command for admin

@@ -5,6 +5,8 @@ class btn:
     unblock = 'Unblock'
     reply = 'Reply'
     user = '{index}. {user.first_name}'
+    skip = 'Skip'
+    back = 'Back'
 
 
 class msg:
@@ -45,30 +47,55 @@ So, here is a list of commands that you should keep in mind:
     userlist_header = 'User list: \n\n'
     blockedlist_header = 'Blocked list: \n\n'
     log_header = 'Chat with {user.first_name} (@{user.username}):\n\n'
-    
-    nonavailmsg_setting = 'Alright now send me your text that you want others to see when you are <b>unavailable</b>.'
-    nonavailmsg_set = 'Thanks!\n<b>The new Unavailable Message has been set successfully.</b>'
-    nonavailmsg_view = '<code>Your Unavailable Message:</code>\n{}'
-    nonavailmsg_notset = '<code>Unavailable message is not set.</code>'
-
-    startmsg_setting = '''Alright now send me your text that you want users to see when he/she <b>starts</b> the bot.
-You can use <code>{name}</code> in place of user's first name.'''
-    startmsg_set = 'Thanks!\n<b>The new Start Message has been set successfully.</b>'
-    startmsg_view = '<code>Your Start Message:</code>\n{}'
-    startmsg_notset = '<code>Start message is not set.</code>'
-
-    blockmsg_setting = 'Alright now send me your text that you want user to see when he/she is <b>blocked</b>.'
-    blockmsg_set = 'Thanks!\n<b>The new Block Message has been set successfully.</b>'
-    blockmsg_view = '<code>Your Block Message:</code>\n{}'
-    blockmsg_notset = '<code>Block message is not set.</code>'
 
     invalid_content_type = 'Invalid content type'
+
+    master_intro = '''Okay, lets set up messages for your users.\n\n'''
+    master_edited = '''\
+Your previous <b>{msg_type}</b> message:
+<code>=========================</code>
+{old_msg}
+<code>=========================</code>
+
+Your new <b>{msg_type}</b> message:
+<code>=========================</code>
+{new_msg}
+<code>=========================</code>
+'''
+    master_step = '''\
+Your <b>{msg_type}</b> message:
+<code>=========================</code>
+{msg}
+<code>=========================</code>
+
+Now you can send me new <b>{msg_type}</b> message or tap <b>Skip</b> button to \
+leave it as it is.'''
+    master_notset = '''\
+Your <b>{msg_type}</b> message is not set!
+Kindly send me your new <b>{msg_type}</b> message.'''
+    master_set = '''\
+Your <b>{msg_type}</b> message is set:
+<code>=========================</code>
+{new_msg}
+<code>=========================</code>'''
+    master_done = '''Alright! All messages for users are set.'''
+    master_skipped = '''\
+Your <b>{msg_type}</b> message:
+<code>=========================</code>
+{msg}
+<code>=========================</code>
+'''
+
+
 
 class ans:
     done = 'Done!'
     reply = 'Okay, now send me a message!'
     blocked = 'User blocked!'
     unblocked = 'User unblocked!'
+    error = 'Error!.'
+    skipped = 'Skipped..'
+    returned = 'Returned..'
 
 
 pager_marks = ['« ', '< ', '·', ' >', ' »']
