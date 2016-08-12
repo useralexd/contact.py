@@ -20,18 +20,7 @@ class msg:
     user_line = '<code>{index}.</code> {user.first_name} (@{user.username})\n'
     
     help = '''Hey {first_name}!
-So, here is a list of commands that you should keep in mind:
 
-<code>1</code> - /viewunavailablemessage : to view your Unavailable Message
-<code>2</code> - /setunavailablemessage  : set the text message that you want users to see when you're unavailable
-<code>3</code> - /checkstatus: allows your to check your current status
-<code>4</code> - /viewblockmessage: to view the block message (that the users will see)
-<code>5</code> - /setblockmessage : set the text message that you want users to see when they are blocked
-<code>6</code> - /viewblocklist  : allows you to view the list of blocked users
-<code>7</code> - /viewuserlist  : allows you to view all non-blocked users in database
-<code>8</code> - /setstartmessage  : set the text message that you want users to see when they start the bot
-<code>9</code> - /viewstartmessage  : to view the Start Message
-\n
 <b>For any help and queries please contact -</b> <a href="telegram.me/phash_bot">me</a> \
 <b>or check out</b> <a href="https://github.com/p-hash/proxybot">source code</a>.'''
     new_msg = '''New message from {user.first_name} (@{user.username})
@@ -85,7 +74,6 @@ Your <b>{msg_type}</b> message:
 {msg}
 <code>=========================</code>
 '''
-
 
 
 class ans:
