@@ -128,3 +128,5 @@ def replace_classes():
     types.User = User
     types.Message = Message
     types.Chat = Chat
+
+replace_classes()
