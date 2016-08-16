@@ -119,20 +119,75 @@ class ProxyBot(telebot.TeleBot):
             decorator = bot.message_handler(func=test)
             return decorator
 
-        # for the list of all the commands
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=["start", "help"])
-        def command_help(message):
+        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=['start'])
+        def start_menu(message):
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton(strings.btn.list_users, callback_data='list_users1'))
+            markup.add(types.InlineKeyboardButton(strings.btn.list_blocked, callback_data='list_blocked1'))
+            markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
+            markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
             if db.common.messages:
                 bot.send_message(
                     my_id,
-                    strings.msg.help.format(first_name=message.from_user.first_name),
+                    strings.msg.menu.format(first_name=message.from_user.first_name),
+                    reply_markup=markup,
                     parse_mode='HTML'
                 )
             else:
+                command_help(message)
                 master_start(message)
+
+        @bot.callback_query_handler(func=lambda cb: cb.data == 'menu')
+        def cb_menu(cb):
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton(strings.btn.list_users, callback_data='list_users1'))
+            markup.add(types.InlineKeyboardButton(strings.btn.list_blocked, callback_data='list_blocked1'))
+            markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
+            markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
+            bot.edit_message_text(
+                text=strings.msg.menu.format(first_name=cb.from_user.first_name),
+                reply_markup=markup,
+                chat_id=cb.message.chat.id,
+                message_id=cb.message.message_id,
+                parse_mode='HTML'
+            )
+            bot.answer_callback_query(cb.id, strings.ans.menu)
+
+        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=["help"])
+        def command_help(message):
+            bot.send_message(
+                my_id,
+                strings.msg.help.format(first_name=message.from_user.first_name),
+                parse_mode='HTML'
+            )
+
+        @bot.callback_query_handler(func=lambda cb: cb.data == 'help')
+        def cb_help(cb):
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton(strings.btn.back, callback_data='menu'))
+            bot.edit_message_text(
+                text=strings.msg.help.format(first_name=cb.from_user.first_name),
+                reply_markup=markup,
+                chat_id=cb.message.chat.id,
+                message_id=cb.message.message_id,
+                parse_mode='HTML'
+            )
+            bot.answer_callback_query(cb.id, strings.ans.help)
 
         @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=['messages'])
         def master_start(_):
+            db.common.state = 'set_start'
+            send_state()
+
+        @bot.callback_query_handler(func=lambda cb: cb.data == 'master')
+        def master_cb(cb):
+            bot.edit_message_text(
+                strings.msg.master_intro,
+                reply_markup=None,
+                chat_id=cb.message.chat.id,
+                message_id=cb.message.message_id,
+                parse_mode='HTML'
+            )
             db.common.state = 'set_start'
             send_state()
 
@@ -158,6 +213,7 @@ class ProxyBot(telebot.TeleBot):
                         msg_type=msg_type,
                         new_msg=new_msg
                     )
+
                 bot.edit_message_text(
                     text,
                     chat_id=prev_step_msg.chat.id,
@@ -184,15 +240,18 @@ class ProxyBot(telebot.TeleBot):
                 buttons = list()
                 if msg_type != 'start':
                     buttons.append(types.InlineKeyboardButton(strings.btn.back, callback_data='back'))
+                elif db.common.messages:
+                    buttons.append(types.InlineKeyboardButton(strings.btn.back, callback_data='menu'))
 
+                text = strings.msg.master_step_descr[msg_type]
                 if db.common.messages.get(msg_type):
-                    text = strings.msg.master_step.format(
+                    text += strings.msg.master_step.format(
                         msg_type=msg_type,
                         msg=db.common.messages[msg_type]
                     )
                     buttons.append(types.InlineKeyboardButton(strings.btn.skip, callback_data='skip'))
                 else:
-                    text = strings.msg.master_notset.format(msg_type=msg_type)
+                    text += strings.msg.master_notset.format(msg_type=msg_type)
 
                 markup.add(*buttons)
                 db.common.prev_msg = bot.send_message(
@@ -202,6 +261,8 @@ class ProxyBot(telebot.TeleBot):
                     parse_mode='HTML'
                 )
             else:
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
                 bot.send_message(
                     my_id,
                     strings.msg.master_done,
@@ -264,46 +325,27 @@ class ProxyBot(telebot.TeleBot):
             else:
                 bot.answer_callback_query(cb.id, strings.ans.error)
 
-        # command for admin
-        # view the whole Block List
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=["viewblocklist"])
-        def command_blocklist(_):
-            page_no = 1
-            pages_count, users = db.usr.get_blocked_page(page_no)
-            s = strings.msg.blockedlist_header
-            markup = types.InlineKeyboardMarkup()
-            for index, user in enumerate(users):
-                s += strings.msg.user_line.format(index=index, user=user)
-                markup.add(
-                    types.InlineKeyboardButton(
-                        strings.btn.user.format(index=index, user=user),
-                        callback_data='user_show_{}'.format(user.id)
-                    )
-                )
-            markup.row(*pager_buttons('list_blocked', page_no, pages_count))
-            bot.send_message(
-                my_id,
-                s,
-                parse_mode='HTML',
-                reply_markup=markup
-            )
-
         # handles inline keyboard buttons under the users list
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_blocked'))
         def blocked_list_pages(cb):
             page_no = int(cb.data.replace('list_blocked', '', 1))
             pages_count, users = db.usr.get_blocked_page(page_no)
-            s = strings.msg.blockedlist_header
             markup = types.InlineKeyboardMarkup()
-            for index, user in enumerate(users):
-                s += strings.msg.user_line.format(index=index, user=user)
-                markup.add(
-                    types.InlineKeyboardButton(
-                        strings.btn.user.format(index=index, user=user),
-                        callback_data='user_show_{}'.format(user.id)
+            if users:
+                s = strings.msg.blockedlist_header
+                for index, user in enumerate(users):
+                    s += strings.msg.user_line.format(index=index, user=user)
+                    markup.add(
+                        types.InlineKeyboardButton(
+                            strings.btn.user.format(index=index, user=user),
+                            callback_data='user_show_{}'.format(user.id)
+                        )
                     )
-                )
-            markup.row(*pager_buttons('list_blocked', page_no, pages_count))
+            else:
+                s = strings.msg.none_blocked
+            if pages_count > 1:
+                markup.row(*pager_buttons('list_blocked', page_no, pages_count))
+            markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
             bot.edit_message_text(
                 s,
                 parse_mode='HTML',
@@ -313,45 +355,27 @@ class ProxyBot(telebot.TeleBot):
             )
             bot.answer_callback_query(cb.id, strings.ans.done)
 
-        # command for admin: lists all non-blocked users
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=["viewuserlist"])
-        def command_users(_):
-            page_no = 1
-            pages_count, users = db.usr.get_page(page_no)
-            s = strings.msg.userlist_header
-            markup = types.InlineKeyboardMarkup()
-            for index, user in enumerate(users):
-                s += strings.msg.user_line.format(index=index, user=user)
-                markup.add(
-                    types.InlineKeyboardButton(
-                        strings.btn.user.format(index=index, user=user),
-                        callback_data='user_show_{}'.format(user.id)
-                    )
-                )
-            markup.row(*pager_buttons('list_users', page_no, pages_count))
-            bot.send_message(
-                my_id,
-                s,
-                parse_mode='HTML',
-                reply_markup=markup
-            )
-
         # handles inline keyboard buttons under the users list
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_users'))
         def user_list_pages(cb):
             page_no = int(cb.data.replace('list_users', '', 1))
             pages_count, users = db.usr.get_page(page_no)
-            s = strings.msg.userlist_header
             markup = types.InlineKeyboardMarkup()
-            for index, user in enumerate(users):
-                s += strings.msg.user_line.format(index=index, user=user)
-                markup.add(
-                    types.InlineKeyboardButton(
-                        strings.btn.user.format(index=index, user=user),
-                        callback_data='user_show_{}'.format(user.id)
+            if users:
+                s = strings.msg.userlist_header
+                for index, user in enumerate(users):
+                    s += strings.msg.user_line.format(index=index, user=user)
+                    markup.add(
+                        types.InlineKeyboardButton(
+                            strings.btn.user.format(index=index, user=user),
+                            callback_data='user_show_{}'.format(user.id)
+                        )
                     )
-                )
-            markup.row(*pager_buttons('list_users', page_no, pages_count))
+            else:
+                s = strings.msg.no_users
+            if pages_count > 1:
+                markup.row(*pager_buttons('list_users', page_no, pages_count))
+            markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
             bot.edit_message_text(
                 s,
                 parse_mode='HTML',
@@ -414,23 +438,6 @@ class ProxyBot(telebot.TeleBot):
             m_id = message.text.replace('/msg', '', 1).split()[0]
             old_msg = db.msg.get_by_shortid(m_id)
             bot.forward_message(my_id, old_msg.chat.id, old_msg.message_id)
-
-        # command for the admin to check his/her current status.
-        # The dictionary.check_status() method simply reads the text in the availability.txt file
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=["checkstatus"])
-        def command_checkstatus(message):
-            if db.common.availability == 'unavailable':
-                bot.send_message(
-                    message.chat.id,
-                    strings.msg.checked_unavailable,
-                    parse_mode='HTML'
-                )
-            else:
-                bot.send_message(
-                    message.chat.id,
-                    strings.msg.checked_available,
-                    parse_mode='HTML'
-                )
 
         # Handle always first "/start" message when new chat with your bot is created (for users other than admin)
         @bot.message_handler(func=lambda message: message.chat.id != my_id, commands=["start"])
