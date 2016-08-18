@@ -267,6 +267,7 @@ class ProxyBot(telebot.TeleBot):
                 bot.send_message(
                     my_id,
                     strings.msg.master_done,
+                    reply_markup=markup,
                     parse_mode='HTML'
                 )
                 db.common.prev_msg = None
