@@ -112,7 +112,9 @@ class __CommonData:
 
     @property
     def messages(self):
-        return self.data['messages']
+        if not self.data.get('messages'):
+            self.data['messages'] = dict()
+        return self.data.get('messages')
 
     def save(self):
         self.coll.update_one({'_id': self.data['_id']}, {'$set': self.data})
