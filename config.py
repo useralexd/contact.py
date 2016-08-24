@@ -16,6 +16,12 @@ availability_expiration = 60 * 60  # 1h
 replying_expiration = 15 * 60  # 15min
 
 
+# Webhook:
+public_host = 'example.com'  # Your public ip or domain
+listen_host = host = '0.0.0.0'  # host the server would listen on
+port = 443  # one of [80, 88, 443, 8443]
+ssl_context = ('path/to/cert.pem', 'path/to/cert.key')  # or None
+
 # You can define all those variables in local_config.py
 # It will let you `git pull` without merging
 # Take care that updates are not guaranteed to be backward compatible
@@ -23,3 +29,5 @@ try:
     from local_config import *
 except ImportError:
     pass
+
+baseurl = 'https://{}:{}/'.format(public_host, port)

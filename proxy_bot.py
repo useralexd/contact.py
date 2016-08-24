@@ -106,6 +106,7 @@ class ProxyBot(telebot.TeleBot):
     def __init__(self, token, my_id):
         super().__init__(token)
         bot = self
+        bot.remove_webhook()
         self.my_id = my_id
 
         # helper decorator: wrapper around bot.message handler for catching all commands with specified prefix
