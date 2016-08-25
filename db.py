@@ -35,8 +35,12 @@ class __DAO:
         if query is None:
             query = {}
         cursor = self.coll.find(query).sort('_id', 1)
+        count = cursor.count()
+        pages_count = count // page_size
+        if count % page_size:
+            pages_count += 1
         return (
-            cursor.count(),
+            pages_count,
             [
                 self.type(**db_rec)
                 for db_rec in
