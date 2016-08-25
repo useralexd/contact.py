@@ -98,6 +98,7 @@ def get_usercard_markup(user, log_page=None):
     buttons.append(types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(user.id)))
 
     markup.add(*buttons)
+    markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
     return text, markup
 
 
