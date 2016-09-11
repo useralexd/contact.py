@@ -26,6 +26,10 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
  * [Contact](#contact)
 
 ##ChangeLog!
+####Version1.0.0
+   * **Major Update**: Release, a lot of inline buttons, webhook version
+   * **Bugs in this version**: Hopefully no
+
 ####Version0.4.0
    * **Major Update**: Replying behavior and usage changed. [Smart availability feature](#available-and-unavailable-feature).
    * **Bugs in this version**: 
@@ -71,6 +75,9 @@ Credits to [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot) for additional 
 
 
 ## What's new ???
+* Webhook version
+* Removed all commands except `/start`. All features are now accessible using inline buttons.
+* You can now interactively set messages for users. Removed commands like: `/set*message` and `/view*message` 
 * Added **Reply** button to _usercard_. Now it is the only way to reply back to user. Forwards are gone forever.
 * [Smart availability](#available-and-unavailable-feature).
 * Due to smart availability: removed commands `/available` or `/unavailable`.
@@ -91,7 +98,7 @@ I've added **Show log** button to _usercard_ which turns _usercard_ into list of
 
 So, to view log:
 
-1. Find user, which log do you want to see, in list of users (`/viewuserlist`) or in list of blocked (`/viewblocklist`)
+1. Find user, which log do you want to see, in list of users or in list of blocked
 2. Request his _usercard_ by pressing user's inline button.
 3. Tap **Show log** button
 
@@ -99,26 +106,12 @@ To view non-text messages tap on `/msgABCDEF` commands which would be placeholde
 
 To reply back to user, press **Reply** button.
 
-
-### Setting Start Message
-You can set Start Message -- the message, which user sees when he/she starts the bot.
-Use `/setstartmessage` command for setting it and `/viewstartmessage` for viewing it.
-
-
 ### Blocking and Unblocking Feature
 It was messy and complicated for me in Mr_Gigabyte's implementation, so I've fully rewrited it.
 
-There is a message which I call _usercard_. It has all information about user and an inline keyboard with only one button, which allows to block or unblock user. _Usercard_ can be requested by inline buttons, which could be found in all users list (`/viewuserlist`) and blocked user list (`/viewblocklist`)
+There is a message which I call _usercard_. It has all information about user and an inline keyboard with only one button, which allows to block or unblock user. _Usercard_ can be requested by inline buttons, which could be found in all users list and blocked user list.
 
 Data storage moved from couple text files to MongoDB, which will help us to add functionality in future.
-
-So here are the commands connected to blocking:
-
-* `/setblockmessage` <-- To **set the block text** that the user will see once he/she is blocked 
-* `/viewblockmessage` <-- To **view** your own block message
-* `/viewuserlist` <-- To **view** all users in a list
-* `/viewblocklist` <-- To **view** blocked users list
-
 
 ### Available and Unavailable Feature
 There can be at times when you as an admin are unavailable or don't temporarily have access to the bot, but you at the same time want to notify all the users about your unavailability just like the way we have on answering machines ? 
@@ -131,15 +124,8 @@ Your available status is managed automatically. I did this because I always forg
 
 Status is set to **available** each time admin replies to user. After **1 hour** of inactivity it resets back to **unavailable**. 
 The expiration time is adjustable in config file.
-To check the current status simply send **/checkstatus** to the bot
 
 If your status is set to **unavailable** then the bot will send the message to the admin (as usually) and notify the user about the unavailability **( by sending an unavailable message)**
-
-To set the unavailable message simply send:
-* `/setunavailablemessage`
-
-To view the unavailable message simply send:
-* `/viewunavailablemessage`
 
 
 ## Notes and restrictions
@@ -149,17 +135,16 @@ To view the unavailable message simply send:
 4. Supported message types in reply: `text`, `sticker`, `photo`, `video`, `audio`, `voice`, `document`, `location`.
 5. To block a user simply tap **Block** button under his _usercard_. It will change its name to **Unblock** and user will be blocked.
 6. This bot only works in the private chats.
-7. You can use the `/help` command to view all the commands which you can use an admin
-
 
 ## Upcoming Features
 * Anti-Spam Feature, limiting messages sent per-second
 * Broadcast feature for admins, they can broadcast a certain message to selected users they want
-
+* Markdown support
+* Group chats support
+* Media support for saved messages
 
 ## Remember!
 I understand, that "proxy" bots can be used to prevent spammers from being reported, so if you encounter such bots that are used to do "bad" things, feel free to report them: [abuse@telegram.org](mailto:abuse@telegram.org)
-
 
 ## F.A.Q
 #### 1. Will this bot work in groups/supergroups/channels?
@@ -167,7 +152,6 @@ For the time being this bot just works in private chats.
 
 #### 2. Can I use Emojis in my saved messages (start, block and unavailable)?
 Yes! You can use **ONLY** emojis or text in your saved messages, you cannot save stickers/gifs or any other media. Hope that links could help in your particular case.
-
 
 ## Contact
 You can contact me via my [Proxy Bot](https://telegram.me/phash_bot)*[]:
