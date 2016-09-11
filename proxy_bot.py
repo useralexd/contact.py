@@ -479,6 +479,7 @@ class ProxyBot(telebot.TeleBot):
                     types.InlineKeyboardButton(strings.btn.block, callback_data='user_block_{}'.format(user.id)),
                     types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(user.id))
                 )
+                markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
                 bot.send_message(  # send it to admin
                     my_id,
                     text,

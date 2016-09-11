@@ -137,13 +137,14 @@ class __CommonData:
 
     @property
     def replying_to(self):
-        if time() - self._last_seen > self._replying_to_expiration:  # if admin wasn't here for a quite long time
+        if time() - self._replying_to_update > self._replying_to_expiration:  # if admin wasn't here for a quite long time
             self._replying_to = None  # ignore last replying_to
         return self._replying_to
 
     @replying_to.setter
     def replying_to(self, value):
         self._replying_to = value
+        self._replying_to_update = time()
 
     def update_last_seen(self):
         self._last_seen = time()
