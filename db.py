@@ -49,15 +49,9 @@ class __DAO:
         )
 
 
-class __UserDAO(__DAO):
+class __ChatDAO(__DAO):
     def __init__(self, coll):
-        super().__init__(coll, model.User)
-
-    def get_pages_count(self, page_size=5):
-        pages_count = self.count // page_size
-        if self.count % page_size:
-            pages_count += 1
-        return pages_count
+        super().__init__(coll, model.Chat)
 
     def get_blocked_page(self, page_no=1, page_size=5):
         return self._get_page(page_no, page_size, {'blocked': True})
@@ -65,13 +59,17 @@ class __UserDAO(__DAO):
     def get_page(self, page_no=1, page_size=5):
         return self._get_page(page_no, page_size, {'blocked': False})
 
+    def get_by_id(self, item_id):
+        db_rec = self.coll.find_one({'id': item_id})
+        return self.type(**db_rec) if db_rec else None
+
 
 class __MessageDAO(__DAO):
     def __init__(self, coll):
         super().__init__(coll, model.Message)
 
-    def get_page_with(self, user_id, page_no=0, page_size=4):
-        cursor = self.coll.find({'with': user_id}).sort('_id', 1)
+    def get_chat_page(self, chat_id, page_no=0, page_size=4):
+        cursor = self.coll.find({'chat.id': chat_id}).sort('_id', 1)
         count = cursor.count()
         pages_count = count // page_size + (1 if count % page_size else 0)
         if page_no == 0:
@@ -166,6 +164,6 @@ def __get_coll(coll_name):
         __db.create_collection(coll_name)
     return __db[coll_name]
 
-usr = __UserDAO(__get_coll('usr'))
+chat = __ChatDAO(__get_coll('chat'))
 msg = __MessageDAO(__get_coll('msg'))
 common = __CommonData(__get_coll('common'))

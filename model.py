@@ -71,10 +71,6 @@ class Message(Model, types.Message):
         if args:
             self.id = bson.ObjectId()
             super().__init__(*args)
-            if self.from_user.id != config.my_id:
-                self.with_user = self.from_user.id
-            else:
-                self.with_user = None
         else:
             super().__init__(
                 kwargs['message_id'],
@@ -86,7 +82,6 @@ class Message(Model, types.Message):
             )
             self.id = kwargs['_id']
             self.text = kwargs['text']
-            self.with_user = kwargs['with']
 
     def to_dic(self):
         d = dict()
@@ -99,8 +94,6 @@ class Message(Model, types.Message):
         d['chat'] = self.chat.to_dic()
         d['content_type'] = self.content_type
 
-        d['with'] = self.with_user
-
         if self.text:
             d['text'] = self.text
         else:
@@ -111,8 +104,20 @@ class Message(Model, types.Message):
         return """{user}: {text}""".format(user=self.from_user.first_name, text=self.text)
 
 
-# Just adds Dictionaryable to chat
 class Chat(Model, types.Chat):
+    def __init__(self, *args, **kwargs):
+        if not args:
+            args = (
+                int(kwargs.get('_id') or kwargs.get('id')),
+                kwargs['type'],
+                kwargs.get('title'),
+                kwargs.get('username'),
+                kwargs.get('first_name'),
+                kwargs.get('last_name'),
+            )
+        self.blocked = kwargs.get('blocked') or False
+        super().__init__(*args)
+
     def to_dic(self):
         d = {}
         for k, v in vars(self).items():
@@ -121,6 +126,12 @@ class Chat(Model, types.Chat):
             elif not str(k).startswith('_'):
                 d[k] = v
         return d
+
+    def update(self, data):
+        self.last_name = data.last_name
+        self.first_name = data.first_name
+        self.username = data.username
+        self.title = data.title
 
 
 # Replaces classes in telebot.types

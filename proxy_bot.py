@@ -78,7 +78,7 @@ def get_usercard_markup(user, log_page=None):
     if log_page is not None:
         text = strings.msg.log_header.format(user=user)
 
-        log_pages_count, msgs = db.msg.get_page_with(user.id, log_page)  # gets messages from db
+        log_pages_count, msgs = db.msg.get_chat_page(user.id, log_page)  # gets messages from db
 
         if log_page == 0:
             log_page = log_pages_count  # if page_no is not set, let it be the last page
@@ -332,7 +332,7 @@ class ProxyBot(telebot.TeleBot):
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_blocked'))
         def blocked_list_pages(cb):
             page_no = int(cb.data.replace('list_blocked', '', 1))
-            pages_count, users = db.usr.get_blocked_page(page_no)
+            pages_count, users = db.chat.get_blocked_page(page_no)
             markup = types.InlineKeyboardMarkup()
             if users:
                 s = strings.msg.blockedlist_header
@@ -362,7 +362,7 @@ class ProxyBot(telebot.TeleBot):
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_users'))
         def user_list_pages(cb):
             page_no = int(cb.data.replace('list_users', '', 1))
-            pages_count, users = db.usr.get_page(page_no)
+            pages_count, users = db.chat.get_page(page_no)
             markup = types.InlineKeyboardMarkup()
             if users:
                 s = strings.msg.userlist_header
@@ -392,19 +392,19 @@ class ProxyBot(telebot.TeleBot):
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('user'))
         def user_block_toggle(cb):
             command, _id = cb.data.split('_')[1:]
-            user = db.usr.get_by_id(int(_id))  # gets user info from db
-            assert user  # makes sure that user is in db
+            chat = db.chat.get_by_id(int(_id))  # gets user info from db
+            assert chat  # makes sure that user is in db
 
             if command == 'block':  # block command
-                user.blocked = True
+                chat.blocked = True
                 bot.answer_callback_query(cb.id, strings.ans.blocked)
             elif command == 'unblock':  # unblock command
-                user.blocked = False
+                chat.blocked = False
                 bot.answer_callback_query(cb.id, strings.ans.unblocked)
             else:
                 bot.answer_callback_query(cb.id, strings.ans.done)
 
-            text, markup = get_usercard_markup(user)  # edits message according to update
+            text, markup = get_usercard_markup(chat)  # edits message according to update
             bot.edit_message_text(
                 text,
                 parse_mode='HTML',
@@ -413,7 +413,7 @@ class ProxyBot(telebot.TeleBot):
                 chat_id=cb.from_user.id
             )
 
-            db.usr.update(user)  # pushes changes to db
+            db.chat.update(chat)  # pushes changes to db
 
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('log'))
         def show_log(cb):
@@ -421,7 +421,7 @@ class ProxyBot(telebot.TeleBot):
             user_id = int(user_id)
             page_no = int(page_no)
 
-            user = db.usr.get_by_id(user_id)  # gets user info from db
+            user = db.chat.get_by_id(user_id)  # gets user info from db
 
             text, markup = get_usercard_markup(user, page_no)
 
@@ -457,27 +457,30 @@ class ProxyBot(telebot.TeleBot):
             content_types=['text', 'audio', 'document', 'photo', 'sticker', 'video', 'voice', 'location', 'contact']
         )
         def handle_all(message):
-            user = db.usr.get_by_id(message.from_user.id)  # get user from database
-            if not user:  # If user is new
-                user = model.User(_id=message.from_user.id, first_name=message.from_user.first_name)
-            user.update(message.from_user)  # updates user data (username, first_name and last_name)
-            db.usr.update(user)  # pushes updated data back to db
+            chat = db.chat.get_by_id(message.chat.id)  # get chat from database
+            if not chat:  # If user is new
+                chat = model.Chat(_id=message.chat.id, type=message.chat.type)
+            chat.update(message.chat)  # updates user data (username, first_name and last_name)
+            db.chat.update(chat)  # pushes updated data back to db
 
             # checks whether the admin has blocked that user via bot or not
-            if user.blocked:
-                # if blocked: notify user about it
-                bot.send_message(message.chat.id, db.common.blockmsg)
+            if chat.blocked:
+                if chat.type == 'private':
+                    # if blocked: notify user about it
+                    bot.send_message(message.chat.id, db.common.blockmsg)
+                else:
+                    bot.leave_chat(chat.id)
 
             else:
                 # if not blocked:
                 db.msg.create(message)  # log message in db
 
-                text = strings.msg.new_msg.format(user=user, message=message)
+                text = strings.msg.new_msg.format(user=chat, message=message)
                 markup = types.InlineKeyboardMarkup()
                 markup.add(
-                    types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(user.id)),
-                    types.InlineKeyboardButton(strings.btn.block, callback_data='user_block_{}'.format(user.id)),
-                    types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(user.id))
+                    types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)),
+                    types.InlineKeyboardButton(strings.btn.block, callback_data='user_block_{}'.format(chat.id)),
+                    types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(chat.id))
                 )
                 markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
                 bot.send_message(  # send it to admin
@@ -504,47 +507,47 @@ class ProxyBot(telebot.TeleBot):
         # handles admin's replies
         def send_reply(message):
             if db.common.replying_to:
-                user_id = db.common.replying_to
+                chat_id = db.common.replying_to
             else:
                 bot.send_message(my_id, strings.msg.noone_to_reply)
                 return
 
+            sent_msg = None
             if message.content_type == 'text':
-                bot.send_chat_action(user_id, action='typing')
-                bot.send_message(user_id, message.text)
+                bot.send_chat_action(chat_id, action='typing')
+                sent_msg = bot.send_message(chat_id, message.text)
             elif message.content_type == "sticker":
-                bot.send_chat_action(user_id, action='typing')
-                bot.send_sticker(user_id, message.sticker.file_id)
+                bot.send_chat_action(chat_id, action='typing')
+                sent_msg = bot.send_sticker(chat_id, message.sticker.file_id)
             elif message.content_type == "photo":
-                bot.send_chat_action(user_id, action='upload_photo')
-                bot.send_photo(user_id, list(message.photo)[-1].file_id)
+                bot.send_chat_action(chat_id, action='upload_photo')
+                sent_msg = bot.send_photo(chat_id, list(message.photo)[-1].file_id)
             elif message.content_type == "voice":
-                bot.send_chat_action(user_id, action='record_audio')
-                bot.send_voice(user_id, message.voice.file_id, duration=message.voice.duration)
+                bot.send_chat_action(chat_id, action='record_audio')
+                sent_msg = bot.send_voice(chat_id, message.voice.file_id, duration=message.voice.duration)
             elif message.content_type == "document":
-                bot.send_chat_action(user_id, action='upload_document')
-                bot.send_document(user_id, data=message.document.file_id)
+                bot.send_chat_action(chat_id, action='upload_document')
+                sent_msg = bot.send_document(chat_id, data=message.document.file_id)
             elif message.content_type == "audio":
-                bot.send_chat_action(user_id, action='upload_audio')
-                bot.send_audio(
-                    user_id,
+                bot.send_chat_action(chat_id, action='upload_audio')
+                sent_msg = bot.send_audio(
+                    chat_id,
                     performer=message.audio.performer,
                     audio=message.audio.file_id,
                     title=message.audio.title,
                     duration=message.audio.duration
                 )
             elif message.content_type == "video":
-                bot.send_chat_action(user_id, action='upload_video')
-                bot.send_video(user_id, data=message.video.file_id, duration=message.video.duration)
+                bot.send_chat_action(chat_id, action='upload_video')
+                sent_msg = bot.send_video(chat_id, data=message.video.file_id, duration=message.video.duration)
             elif message.content_type == "location":
                 # No Google Maps on my phone, so this code is untested, should work fine though
-                bot.send_chat_action(user_id, action='find_location')
-                bot.send_location(user_id, latitude=message.location.latitude, longitude=message.location.longitude)
+                bot.send_chat_action(chat_id, action='find_location')
+                sent_msg = bot.send_location(chat_id, latitude=message.location.latitude, longitude=message.location.longitude)
             else:
-                bot.send_message(my_id, strings.msg.invalid_content_type)
+                sent_msg = bot.send_message(my_id, strings.msg.invalid_content_type)
 
-            message.with_user = user_id  # mark message as belonging to conversation with specified user
-            db.msg.create(message)  # log message in db
+            db.msg.create(sent_msg)  # log message in db
             db.common.update_last_seen()
 
         username = bot.get_me().username
