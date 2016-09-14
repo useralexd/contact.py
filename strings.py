@@ -15,12 +15,14 @@ class btn:
 
 
 class msg:
-    user_full = '''<b>User</b>
-<code>Id:</code> {user.id}
-<code>Username:</code> @{user.username}
-<code>First Name:</code> {user.first_name}
-<code>Last Name:</code> {user.last_name}
-<code>Is blocked?</code> <i>{user.blocked}</i>
+    chat_full = '''<b>Chat</b>
+<code>Id:</code> {chat.id}
+<code>Type:</code> {chat.type}
+<code>Title:</code> {chat.title}
+<code>Username:</code> @{chat.username}
+<code>First Name:</code> {chat.first_name}
+<code>Last Name:</code> {chat.last_name}
+<code>Is blocked?</code> <i>{chat.blocked}</i>
 '''
     user_line = '<code>{index}.</code> {user.first_name} (@{user.username})\n'
     
@@ -123,8 +125,8 @@ Your <b>{msg_type}</b> message:
 class ans:
     done = 'Done!'
     reply = 'Okay, now send me a message!'
-    blocked = 'User blocked!'
-    unblocked = 'User unblocked!'
+    blocked = 'Chat blocked!'
+    unblocked = 'Chat unblocked!'
     error = 'Error!.'
     skipped = 'Skipped..'
     returned = 'Returned..'
