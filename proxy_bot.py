@@ -121,6 +121,14 @@ class ProxyBot(telebot.TeleBot):
             decorator = bot.message_handler(func=test)
             return decorator
 
+        @bot.message_handler(func=lambda m: m.chat.type != 'private')
+        def leave(message):
+            try:
+                bot.reply_to(message, 'I work only in private chats')
+            except telebot.apihelper.ApiException:
+                pass
+            bot.leave_chat(message.chat.id)
+
         @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=['start'])
         def start_menu(message):
             markup = types.InlineKeyboardMarkup()
