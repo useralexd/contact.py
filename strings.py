@@ -4,13 +4,12 @@ class btn:
     block = 'Block'
     unblock = 'Unblock'
     reply = 'Reply'
-    user = '{index}. {user.first_name}'
     skip = 'Skip'
     back = 'Back'
     set_messages = 'Set messages'
     help = 'Help'
-    list_users = 'List users'
-    list_blocked = 'List blocked users'
+    list_chats = 'List chats'
+    list_blocked = 'List blocked chats'
     menu = 'Main menu'
 
 
@@ -24,7 +23,6 @@ class msg:
 <code>Last Name:</code> {chat.last_name}
 <code>Is blocked?</code> <i>{chat.blocked}</i>
 '''
-    user_line = '<code>{index}.</code> {user.first_name} (@{user.username})\n'
     
     help = '''Hey {first_name}!
 
@@ -49,7 +47,7 @@ Here is the main menu. Let me describe the buttons below:
 
 <b>Help</b> sends little help, containing a developer contact and source code link.
 '''
-    new_msg = '''New message from {user.first_name} (@{user.username})
+    new_msg = '''New message from {chat:html}
 
 {message}'''
 
@@ -59,11 +57,10 @@ Here is the main menu. Let me describe the buttons below:
     checked_available = 'Your current status is <b>Available</b>'
     checked_unavailable = 'Your current status is <b>Unavailable</b>'
     
-    userlist_header = 'User list: \n\n'
-    no_users = 'There are no users yet.'
+    chatlist_header = 'Chat list: \n\n'
+    no_chats = 'There are no chats yet.'
     blockedlist_header = 'Blocked list: \n\n'
-    none_blocked = '''You haven't blocked anyone yet.'''
-    log_header = 'Chat with {user.first_name} (@{user.username}):\n\n'
+    none_blocked = '''You haven't blocked any chat yet.'''
 
     invalid_content_type = 'Invalid content type'
 

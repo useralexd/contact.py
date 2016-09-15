@@ -113,6 +113,29 @@ class Chat(Model, types.Chat):
         self.username = data.username
         self.title = data.title
 
+    def __format__(self, format_spec):
+        if format_spec == 'html':
+            text = '<code>[' + self.type + '] </code>'
+            if self.title:
+                text += self.title
+            elif self.first_name:
+                text += self.first_name
+            else:
+                text += '<code>_unnamed_</code>'
+
+            if self.username:
+                text += '(@' + self.username + ')'
+        elif format_spec == 'btn':
+            text = '[' + self.type + ']'
+            if self.title:
+                text += self.title
+            elif self.first_name:
+                text += self.first_name
+            else:
+                text += '_unnamed_'
+        else:
+            text = ''
+        return text
 
 # Replaces classes in telebot.types
 def replace_classes():
