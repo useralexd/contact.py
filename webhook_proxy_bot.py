@@ -1,9 +1,9 @@
-#
 from flask import Flask, request
 import telebot
 
 import proxy_bot
 import config
+
 
 class WebhookProxyBot(proxy_bot.ProxyBot):
     def __init__(self, token, master_id, server, baseurl, cert=None):
@@ -41,5 +41,3 @@ if __name__ == '__main__':
         port=config.port,
         ssl_context=config.ssl_context,
     )
-
-

@@ -139,12 +139,20 @@ class Chat(Model, types.Chat):
 
 
 class Bot(Model):
-    def __new__(cls, bot):
-        return bot.get_me()
-
-    def __init__(self, bot):
-        self.master_id = bot.master_id
-        self.token = bot.token
+    def __init__(self, bot=None, **kwargs):
+        if bot:
+            bot_user = bot.get_me()
+            self.id = bot_user.id
+            self.username = bot_user.username
+            self.first_name = bot_user.first_name
+            self.master_id = bot.master_id
+            self.token = bot.token
+        else:
+            self.id = kwargs['id']
+            self.username = kwargs['username']
+            self.first_name = kwargs['first_name']
+            self.master_id = kwargs['master_id']
+            self.token = kwargs['token']
 
 # Replaces classes in telebot.types
 def replace_classes():
