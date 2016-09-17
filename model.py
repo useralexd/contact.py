@@ -45,7 +45,7 @@ class User(Model, types.User):
     def __init__(self, *args, **kwargs):
         if not args:
             args = (
-                int(kwargs.get('_id') or kwargs.get('id')),
+                int(kwargs['id']),
                 kwargs['first_name'],
                 kwargs.get('last_name'),
                 kwargs.get('username'),
@@ -97,7 +97,7 @@ class Chat(Model, types.Chat):
     def __init__(self, *args, **kwargs):
         if not args:
             args = (
-                int(kwargs.get('_id') or kwargs.get('id')),
+                int(kwargs['id']),
                 kwargs['type'],
                 kwargs.get('title'),
                 kwargs.get('username'),
@@ -124,7 +124,7 @@ class Chat(Model, types.Chat):
                 text += '<code>_unnamed_</code>'
 
             if self.username:
-                text += '(@' + self.username + ')'
+                text += ' (@' + self.username + ')'
         elif format_spec == 'btn':
             text = '[' + self.type + ']'
             if self.title:

@@ -6,9 +6,9 @@ import proxy_bot
 import config
 
 class WebhookProxyBot(proxy_bot.ProxyBot):
-    def __init__(self, token, my_id, server, baseurl, cert=None):
+    def __init__(self, token, master_id, server, baseurl, cert=None):
         path = 'proxybot/' + token
-        super().__init__(token, my_id)
+        super().__init__(token, master_id)
 
         @server.route('/' + path, methods=['POST'])
         def webhook_updates():

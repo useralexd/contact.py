@@ -5,35 +5,49 @@ import model
 import config
 
 
-class __DAO:
-    def __init__(self, coll, item_type):
+class DAO:
+    def __init__(self, coll, item_type, bot_id=None):
         self.coll = coll
-        self.count = coll.find({}).count()
         assert issubclass(item_type, model.Model)
         self.type = item_type
+        self.bot_id = bot_id
 
     def get_by_id(self, item_id):
-        db_rec = self.coll.find_one({'_id': item_id})
+        query = {'id': item_id}
+        if self.bot_id:
+            query['bot_id'] = self.bot_id
+        db_rec = self.coll.find_one(query)
         return self.type(**db_rec) if db_rec else None
 
     def get_all(self):
-        return [self.type(**db_rec) for db_rec in self.coll.find({})]
+        query = {}
+        if self.bot_id:
+            query['bot_id'] = self.bot_id
+        return [self.type(**db_rec) for db_rec in self.coll.find(query)]
 
     def update(self, item):
-        result = self.coll.update_one({'_id': item.id}, {'$set': item.to_dic()}, upsert=True)
-        if result.upserted_id:
-            self.count += 1
+        query = {'id': item.id}
+        if self.bot_id:
+            query['bot_id'] = self.bot_id
+        self.coll.update_one(query, {'$set': item.to_dic()}, upsert=True)
 
     def delete(self, item_id):
-        self.coll.delete_one({'_id': item_id})
+        query = {'id': item_id}
+        if self.bot_id:
+            query['bot_id'] = self.bot_id
+        self.coll.delete_one(query)
 
     def create(self, item):
-        if self.coll.insert_one(item.to_dic()):
-            self.count += 1
+        dic = item.to_dic()
+        if self.bot_id:
+            dic['bot_id'] = self.bot_id
+        self.coll.insert_one(dic)
 
     def _get_page(self, page_no=1, page_size=5, query=None):
         if query is None:
             query = {}
+        if self.bot_id:
+            query['bot_id'] = self.bot_id
         cursor = self.coll.find(query).sort('_id', 1)
         count = cursor.count()
         pages_count = count // page_size
@@ -49,9 +63,9 @@ class __DAO:
         )
 
 
-class __ChatDAO(__DAO):
-    def __init__(self, coll):
-        super().__init__(coll, model.Chat)
+class ChatDAO(DAO):
+    def __init__(self, coll, bot_id):
+        super().__init__(coll, model.Chat, bot_id)
 
     def get_blocked_page(self, page_no=1, page_size=5):
         return self._get_page(page_no, page_size, {'blocked': True})
@@ -59,17 +73,12 @@ class __ChatDAO(__DAO):
     def get_page(self, page_no=1, page_size=5):
         return self._get_page(page_no, page_size, {'blocked': False})
 
-    def get_by_id(self, item_id):
-        db_rec = self.coll.find_one({'id': item_id})
-        return self.type(**db_rec) if db_rec else None
-
-
-class __MessageDAO(__DAO):
-    def __init__(self, coll):
-        super().__init__(coll, model.Message)
+class MessageDAO(DAO):
+    def __init__(self, coll, bot_id):
+        super().__init__(coll, model.Message, bot_id)
 
     def get_chat_page(self, chat_id, page_no=0, page_size=4):
-        cursor = self.coll.find({'chat.id': chat_id}).sort('_id', 1)
+        cursor = self.coll.find({'bot_id': self.bot_id, 'chat.id': chat_id}).sort('_id', 1)
         count = cursor.count()
         pages_count = count // page_size + (1 if count % page_size else 0)
         if page_no == 0:
@@ -84,18 +93,18 @@ class __MessageDAO(__DAO):
         )
 
     def get_by_shortid(self, shortid):
-        db_rec = self.coll.find_one({'short_id': shortid})
+        db_rec = self.coll.find_one({'bot_id': self.bot_id, 'short_id': shortid})
         return self.type(**db_rec) if db_rec else None
 
 
-class __CommonData:
-    def __init__(self, coll):
+class CommonData:
+    def __init__(self, coll, bot_id):
         self.coll = coll
-        try:
-            self.data = coll.find({})[0]
-        except IndexError:
+        self.data = coll.find_one({'bot_id': bot_id})
+        if self.data is None:
             self.data = {
-                'messages': dict()
+                'messages': dict(),
+                'bot_id': bot_id,
             }
             result = self.coll.insert_one(self.data)
             self.data['_id'] = result.inserted_id
@@ -104,6 +113,7 @@ class __CommonData:
         self._replying_to_expiration = config.replying_expiration
         self._availability_expiration = config.availability_expiration
         self._last_seen = time() - self._availability_expiration  # default to unavailable
+        self._replying_to_update = self._last_seen
 
     @property
     def availability(self):
@@ -155,15 +165,16 @@ class __CommonData:
     prev_msg = None
 
 
-__db_client = MongoClient(config.db_auth)
-__db = __db_client[config.db_name]
+class DB:
+    def __init__(self, bot_id):
+        db_client = MongoClient(config.db_auth)
+        db = db_client[config.db_name]
 
+        def get_coll(coll_name):
+            if coll_name not in db.collection_names():
+                db.create_collection(coll_name)
+            return db[coll_name]
 
-def __get_coll(coll_name):
-    if coll_name not in __db.collection_names():
-        __db.create_collection(coll_name)
-    return __db[coll_name]
-
-chat = __ChatDAO(__get_coll('chat'))
-msg = __MessageDAO(__get_coll('msg'))
-common = __CommonData(__get_coll('common'))
+        self.chat = ChatDAO(get_coll('chat'), bot_id)
+        self.msg = MessageDAO(get_coll('msg'), bot_id)
+        self.common = CommonData(get_coll('common'), bot_id)

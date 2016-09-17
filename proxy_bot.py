@@ -5,7 +5,7 @@ from telebot import types
 import logging
 
 import model
-import db
+import db_helper
 import config
 import strings
 
@@ -71,43 +71,16 @@ def pager_buttons(prefix, page_no, pages_count):
     return button_row
 
 
-# helper function: returns an InlineKeyboard markup for chatview
-def get_chatview_markup(chat, log_page=None):
-    markup = types.InlineKeyboardMarkup(row_width=3)
-    buttons = []
-    if log_page is not None:
-        text = '{:html}\n\n'.format(chat)
-
-        log_pages_count, msgs = db.msg.get_chat_page(chat.id, log_page)  # gets messages from db
-
-        if log_page == 0:
-            log_page = log_pages_count  # if page_no is not set, let it be the last page
-
-        for msg in msgs:
-            text += '{}\n'.format(msg)
-        markup.row(*pager_buttons('log_{}_'.format(chat.id), log_page, log_pages_count))
-        buttons.append(types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
-    else:
-        text = strings.msg.chat_full.format(chat=chat)
-        buttons.append(types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
-
-    if chat.blocked:
-        buttons.append(types.InlineKeyboardButton(strings.btn.unblock, callback_data='chat_unblock_{}'.format(chat.id)))
-    else:
-        buttons.append(types.InlineKeyboardButton(strings.btn.block, callback_data='chat_block_{}'.format(chat.id)))
-    buttons.append(types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(chat.id)))
-
-    markup.add(*buttons)
-    markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
-    return text, markup
-
-
 class ProxyBot(telebot.TeleBot):
-    def __init__(self, token, my_id):
+    def __init__(self, token, master_id):
         super().__init__(token)
         bot = self
         bot.remove_webhook()
-        self.my_id = my_id
+        me = bot.get_me()
+        self.id = me.id
+        self.username = me.username
+        self.master_id = master_id
+        db = db_helper.DB(self.id)
 
         # helper decorator: wrapper around bot.message handler for catching all commands with specified prefix
         def my_commandset_handler(prefix):
@@ -115,11 +88,45 @@ class ProxyBot(telebot.TeleBot):
                 return (
                     m.content_type == 'text' and
                     m.text.startswith('/' + prefix) and
-                    m.chat.id == my_id
+                    m.chat.id == master_id
                 )
 
             decorator = bot.message_handler(func=test)
             return decorator
+
+        # helper function: returns an InlineKeyboard markup for chatview
+        def get_chatview_markup(chat, log_page=None):
+            markup = types.InlineKeyboardMarkup(row_width=3)
+            buttons = []
+            if log_page is not None:
+                text = '{:html}\n\n'.format(chat)
+
+                log_pages_count, msgs = db.msg.get_chat_page(chat.id, log_page)  # gets messages from db
+
+                if log_page == 0:
+                    log_page = log_pages_count  # if page_no is not set, let it be the last page
+
+                for msg in msgs:
+                    text += '{}\n'.format(msg)
+                markup.row(*pager_buttons('log_{}_'.format(chat.id), log_page, log_pages_count))
+                buttons.append(
+                    types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
+            else:
+                text = strings.msg.chat_full.format(chat=chat)
+                buttons.append(
+                    types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
+
+            if chat.blocked:
+                buttons.append(
+                    types.InlineKeyboardButton(strings.btn.unblock, callback_data='chat_unblock_{}'.format(chat.id)))
+            else:
+                buttons.append(
+                    types.InlineKeyboardButton(strings.btn.block, callback_data='chat_block_{}'.format(chat.id)))
+            buttons.append(types.InlineKeyboardButton(strings.btn.reply, callback_data='reply_{}'.format(chat.id)))
+
+            markup.add(*buttons)
+            markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
+            return text, markup
 
         @bot.message_handler(func=lambda m: m.chat.type != 'private')
         def leave(message):
@@ -129,7 +136,7 @@ class ProxyBot(telebot.TeleBot):
                 pass
             bot.leave_chat(message.chat.id)
 
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=['start'])
+        @bot.message_handler(func=lambda message: message.chat.id == master_id, commands=['start'])
         def start_menu(message):
             if not db.common.messages:
                 command_help(message)
@@ -141,7 +148,7 @@ class ProxyBot(telebot.TeleBot):
             markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
             markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
             bot.send_message(
-                my_id,
+                master_id,
                 strings.msg.menu.format(first_name=message.from_user.first_name),
                 reply_markup=markup,
                 parse_mode='HTML'
@@ -163,10 +170,10 @@ class ProxyBot(telebot.TeleBot):
             )
             bot.answer_callback_query(cb.id, strings.ans.menu)
 
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=["help"])
+        @bot.message_handler(func=lambda message: message.chat.id == master_id, commands=["help"])
         def command_help(message):
             bot.send_message(
-                my_id,
+                master_id,
                 strings.msg.help.format(first_name=message.from_user.first_name),
                 parse_mode='HTML'
             )
@@ -184,7 +191,7 @@ class ProxyBot(telebot.TeleBot):
             )
             bot.answer_callback_query(cb.id, strings.ans.help)
 
-        @bot.message_handler(func=lambda message: message.chat.id == my_id, commands=['messages'])
+        @bot.message_handler(func=lambda message: message.chat.id == master_id, commands=['messages'])
         def master_start(_):
             db.common.state = 'set_start'
             send_state()
@@ -265,7 +272,7 @@ class ProxyBot(telebot.TeleBot):
 
                 markup.add(*buttons)
                 db.common.prev_msg = bot.send_message(
-                    my_id,
+                    master_id,
                     text,
                     reply_markup=markup,
                     parse_mode='HTML'
@@ -274,7 +281,7 @@ class ProxyBot(telebot.TeleBot):
                 markup = types.InlineKeyboardMarkup()
                 markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
                 bot.send_message(
-                    my_id,
+                    master_id,
                     strings.msg.master_done,
                     reply_markup=markup,
                     parse_mode='HTML'
@@ -448,10 +455,10 @@ class ProxyBot(telebot.TeleBot):
             bot.send_chat_action(message.from_user.id, action="typing")
             m_id = message.text.replace('/msg', '', 1).split()[0]
             old_msg = db.msg.get_by_shortid(m_id)
-            bot.forward_message(my_id, old_msg.chat.id, old_msg.message_id)
+            bot.forward_message(master_id, old_msg.chat.id, old_msg.message_id)
 
         # Handle always first "/start" message when new chat with your bot is created (for users other than admin)
-        @bot.message_handler(func=lambda message: message.chat.id != my_id, commands=["start"])
+        @bot.message_handler(func=lambda message: message.chat.id != master_id, commands=["start"])
         def command_start_all(message):
             bot.send_message(
                 message.chat.id,
@@ -461,7 +468,7 @@ class ProxyBot(telebot.TeleBot):
         # Handle the messages which are not sent by the admin user(the one who is handling the bot)
         # Sends texts, audios, document etc to the admin
         @bot.message_handler(
-            func=lambda message: message.chat.id != my_id,
+            func=lambda message: message.chat.id != master_id,
             content_types=['text', 'audio', 'document', 'photo', 'sticker', 'video', 'voice', 'location', 'contact']
         )
         def handle_all(message):
@@ -492,14 +499,14 @@ class ProxyBot(telebot.TeleBot):
                 )
                 markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
                 bot.send_message(  # send it to admin
-                    my_id,
+                    master_id,
                     text,
                     parse_mode='HTML',
                     reply_markup=markup
                 )
 
                 if message.content_type != 'text':
-                    bot.forward_message(my_id, message.chat.id, message.message_id)
+                    bot.forward_message(master_id, message.chat.id, message.message_id)
 
                 # check the status of the admin whether he's available or not
                 if db.common.availability == 'unavailable' and chat.type == 'private':
@@ -517,10 +524,9 @@ class ProxyBot(telebot.TeleBot):
             if db.common.replying_to:
                 chat_id = db.common.replying_to
             else:
-                bot.send_message(my_id, strings.msg.noone_to_reply)
+                bot.send_message(master_id, strings.msg.noone_to_reply)
                 return
 
-            sent_msg = None
             if message.content_type == 'text':
                 bot.send_chat_action(chat_id, action='typing')
                 sent_msg = bot.send_message(chat_id, message.text)
@@ -551,16 +557,19 @@ class ProxyBot(telebot.TeleBot):
             elif message.content_type == "location":
                 # No Google Maps on my phone, so this code is untested, should work fine though
                 bot.send_chat_action(chat_id, action='find_location')
-                sent_msg = bot.send_location(chat_id, latitude=message.location.latitude, longitude=message.location.longitude)
+                sent_msg = bot.send_location(
+                    chat_id,
+                    latitude=message.location.latitude,
+                    longitude=message.location.longitude
+                )
             else:
-                sent_msg = bot.send_message(my_id, strings.msg.invalid_content_type)
+                sent_msg = bot.send_message(master_id, strings.msg.invalid_content_type)
 
             db.msg.create(sent_msg)  # log message in db
             db.common.update_last_seen()
 
-        username = bot.get_me().username
-        print('Bot has Started\nPlease text the bot on: @{0}\nhttps://telegram.me/{0}'.format(username))
-        bot.send_message(my_id, strings.msg.bot_started)
+        print('Bot has Started\nPlease text the bot on: @{0}\nhttps://telegram.me/{0}'.format(self.username))
+        bot.send_message(master_id, strings.msg.bot_started)
 
 
 if __name__ == '__main__':
