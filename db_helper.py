@@ -165,6 +165,15 @@ class CommonData:
     prev_msg = None
 
 
+class BotsDAO(DAO):
+    def __init__(self, coll):
+        super().__init__(coll, model.Bot)
+
+    def get_by_master(self, master_id):
+        db_rec = self.coll.find_one({'master_id': master_id})
+        return self.type(**db_rec) if db_rec else None
+
+
 class DB:
     def __init__(self, bot_id):
         db_client = MongoClient(config.db_auth)
@@ -178,3 +187,16 @@ class DB:
         self.chat = ChatDAO(get_coll('chat'), bot_id)
         self.msg = MessageDAO(get_coll('msg'), bot_id)
         self.common = CommonData(get_coll('common'), bot_id)
+
+
+class MasterBotDB:
+    def __init__(self):
+        db_client = MongoClient(config.db_auth)
+        db = db_client[config.db_name]
+
+        def get_coll(coll_name):
+            if coll_name not in db.collection_names():
+                db.create_collection(coll_name)
+            return db[coll_name]
+
+        self.bots = BotsDAO(get_coll('bots'))

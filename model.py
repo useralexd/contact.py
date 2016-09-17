@@ -137,6 +137,15 @@ class Chat(Model, types.Chat):
             text = ''
         return text
 
+
+class Bot(Model):
+    def __new__(cls, bot):
+        return bot.get_me()
+
+    def __init__(self, bot):
+        self.master_id = bot.master_id
+        self.token = bot.token
+
 # Replaces classes in telebot.types
 def replace_classes():
     types.User = User

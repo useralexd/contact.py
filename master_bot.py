@@ -4,6 +4,8 @@ import telebot
 from telebot import types
 import logging
 
+import db_helper
+import model
 import config
 import proxy_bot
 
@@ -15,6 +17,7 @@ class MasterBot(telebot.TeleBot):
         super().__init__(token)
         bot = self
         self.sub_bot = sub_bot
+        db = db_helper.MasterBotDB()
 
         @bot.message_handler(commands=['start', 'help'])
         def start(message):
@@ -29,13 +32,18 @@ More info at https://github.com/p-hash/proxybot''')
             new_bot_token = message.text
             new_bot_owner = message.from_user.id
 
+            if db.bots.get_by_master(new_bot_owner):
+                bot.reply_to(message, "You already have one proxybot. Contact @phash_bot for details.")
+                return
+
             try:
                 new_bot = sub_bot(new_bot_token, new_bot_owner)
             except telebot.apihelper.ApiException:
-                bot.reply_to(message, "An error occured: the token is invalid or you haven't started the bot yet.")
+                bot.reply_to(message, "An error occured: the token is invalid or you haven't started your bot yet.")
                 return
 
             if new_bot:
+                db.bots.create(model.Bot(new_bot))
                 self.run_bot(new_bot)
 
         username = bot.get_me().username
