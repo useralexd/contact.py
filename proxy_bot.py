@@ -208,7 +208,7 @@ class ProxyBot(telebot.TeleBot):
             db.common.state = 'set_start'
             send_state()
 
-        @bot.message_handler(func=lambda m: db.common.state.startswith('set'))
+        @bot.message_handler(func=lambda m: m.chat.id == master_id and db.common.state.startswith('set'))
         def master_step(message):
             if message.content_type == 'text':
                 msg_type = db.common.state.split('_')[1]

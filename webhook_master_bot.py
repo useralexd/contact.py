@@ -8,21 +8,19 @@ import model
 
 
 class WebhookMasterBot(telebot.TeleBot):
-    def __init__(self, token, server, baseurl, cert=None):
+    def __init__(self, token, server, baseurl, cert):
         path = 'masterbot/' + token
         super().__init__(token)
         bot = self
         bot.remove_webhook()
         db = db_helper.MasterBotDB()
-        if cert:
-            cert = open(cert, 'rb')
 
         sub_bots = dict()
         for b in db.bots.get_all():
             sub_bot = proxy_bot.ProxyBot(b.token, b.master_id)
             sub_bot.set_webhook(
                 url=baseurl + 'proxybot/' + b.token,
-                certificate=cert
+                certificate=open(cert, 'rb')
             )
             db.bots.update(model.Bot(sub_bot))
             sub_bots[b.token] = sub_bot
@@ -66,12 +64,12 @@ More info at https://github.com/p-hash/proxybot''')
                 db.bots.create(model.Bot(new_bot))
                 new_bot.set_webhook(
                     url=baseurl + '/proxybot/' + new_bot_token,
-                    certificate=cert
+                    certificate=open(cert, 'rb')
                 )
 
         self.set_webhook(
             url=baseurl + path,
-            certificate=cert
+            certificate=open(cert, 'rb')
         )
         print('webhook set on ' + baseurl + path)
 
@@ -82,7 +80,8 @@ if __name__ == '__main__':
     bot = WebhookMasterBot(
         config.token,
         server,
-        config.baseurl
+        config.baseurl,
+        config.ssl_context[0]
     )
 
     server.run(
