@@ -4,6 +4,8 @@ import telebot
 import proxy_bot
 import config
 
+app = Flask(__name__)
+
 
 class WebhookProxyBot(proxy_bot.ProxyBot):
     def __init__(self, token, master_id, server, baseurl, cert=None):
@@ -25,18 +27,16 @@ class WebhookProxyBot(proxy_bot.ProxyBot):
         print('webhook set on ' + baseurl + path)
 
 
+bot = WebhookProxyBot(
+    config.token,
+    config.my_id,
+    app,
+    config.baseurl,
+    config.ssl_context[0]
+)
+
 if __name__ == '__main__':
-    server = Flask('proxybot')
-
-    bot = WebhookProxyBot(
-        config.token,
-        config.my_id,
-        server,
-        config.baseurl,
-        config.ssl_context[0]
-    )
-
-    server.run(
+    app.run(
         host=config.host,
         port=config.port,
         ssl_context=config.ssl_context,

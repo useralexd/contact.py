@@ -6,6 +6,8 @@ import db_helper
 import config
 import model
 
+app = Flask(__name__)
+
 
 class WebhookMasterBot(telebot.TeleBot):
     def __init__(self, token, server, baseurl, cert):
@@ -73,18 +75,15 @@ More info at https://github.com/p-hash/proxybot''')
         )
         print('webhook set on ' + baseurl + path)
 
+bot = WebhookMasterBot(
+    config.token,
+    app,
+    config.baseurl,
+    config.ssl_context[0]
+)
 
 if __name__ == '__main__':
-    server = Flask('masterbot')
-
-    bot = WebhookMasterBot(
-        config.token,
-        server,
-        config.baseurl,
-        config.ssl_context[0]
-    )
-
-    server.run(
+    app.run(
         host=config.host,
         port=config.port,
         ssl_context=config.ssl_context,
