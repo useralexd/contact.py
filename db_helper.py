@@ -73,6 +73,7 @@ class ChatDAO(DAO):
     def get_page(self, page_no=1, page_size=5):
         return self._get_page(page_no, page_size, {'blocked': False})
 
+
 class MessageDAO(DAO):
     def __init__(self, coll, bot_id):
         super().__init__(coll, model.Message, bot_id)

@@ -20,7 +20,9 @@ replying_expiration = 15 * 60  # 15min
 public_host = 'example.com'  # Your public ip or domain
 listen_host = host = '0.0.0.0'  # host the server would listen on
 port = 443  # one of [80, 88, 443, 8443]
-ssl_context = ('path/to/cert.pem', 'path/to/cert.key')  # or None
+cert = None  # or '/path/to/cert.pem'
+key = None  # or '/path/to/key.pem'
+ssl_context = (cert, key)  # or None
 
 # You can define all those variables in local_config.py
 # It will let you `git pull` without merging

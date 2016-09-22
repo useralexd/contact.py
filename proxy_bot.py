@@ -474,8 +474,9 @@ class ProxyBot(telebot.TeleBot):
         def handle_all(message):
             chat = db.chat.get_by_id(message.chat.id)  # get chat from database
             if not chat:  # If chat is new
-                chat = model.Chat(_id=message.chat.id, type=message.chat.type)
-            chat.update(message.chat)  # updates chat data
+                chat = message.chat
+            else:
+                chat.update(message.chat)  # updates chat data
             db.chat.update(chat)  # pushes updated data back to db
 
             # checks whether the admin has blocked that chat via bot or not
