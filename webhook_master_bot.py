@@ -5,6 +5,7 @@ import proxy_bot
 import db_helper
 import config
 import model
+import strings
 
 app = Flask(__name__)
 
@@ -69,6 +70,16 @@ More info at https://github.com/p-hash/proxybot''')
             except telebot.apihelper.ApiException:
                 bot.reply_to(message, "An error occured: the token is invalid or you haven't started your bot yet.")
                 return
+
+            try:
+                new_bot.start()
+                bot.reply_to(message, "Your @{} started".format(new_bot.username))
+            except telebot.apihelper.ApiException:
+                bot.reply_to(
+                    message,
+                    "<a href=telegram.me/{}>Start your bot!</a>".format(new_bot.username),
+                    parse_mode='HTML'
+                )
 
             if new_bot:
                 db.bots.create(model.Bot(new_bot))
