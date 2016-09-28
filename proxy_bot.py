@@ -154,8 +154,6 @@ class ProxyBot(telebot.TeleBot):
                 parse_mode='HTML'
             )
 
-        self.start = start_menu
-
         @bot.callback_query_handler(func=lambda cb: cb.data == 'menu')
         def cb_menu(cb):
             markup = types.InlineKeyboardMarkup()
@@ -534,7 +532,6 @@ class ProxyBot(telebot.TeleBot):
             db.common.update_last_seen()
 
         print('@{} has started for {}'.format(self.username, self.master_id))
-        bot.send_message(master_id, strings.msg.bot_started)
 
     def send_state(self):
         db = self.db
@@ -546,7 +543,7 @@ class ProxyBot(telebot.TeleBot):
                 buttons.append(types.InlineKeyboardButton(strings.btn.back, callback_data='back'))
             elif db.common.messages:
                 buttons.append(types.InlineKeyboardButton(strings.btn.back, callback_data='menu'))
-
+           
             text = strings.msg.master_step_descr[msg_type]
             if db.common.messages.get(msg_type):
                 text += strings.msg.master_step.format(
@@ -556,9 +553,9 @@ class ProxyBot(telebot.TeleBot):
                 buttons.append(types.InlineKeyboardButton(strings.btn.skip, callback_data='skip'))
             else:
                 text += strings.msg.master_notset.format(msg_type=msg_type)
-
+            
             markup.add(*buttons)
-            db.common.prev_msg = bot.send_message(
+            db.common.prev_msg = self.send_message(
                 self.master_id,
                 text,
                 reply_markup=markup,
@@ -567,7 +564,7 @@ class ProxyBot(telebot.TeleBot):
         else:
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
-            bot.send_message(
+            self.send_message(
                 self.master_id,
                 strings.msg.master_done,
                 reply_markup=markup,
@@ -576,13 +573,17 @@ class ProxyBot(telebot.TeleBot):
             db.common.prev_msg = None
 
     def start(self):
-        self.send_message(
-            self.master_id,
-            strings.msg.help.format(first_name='Master'),
-            parse_mode='HTML'
-        )
+        try:
+            self.send_message(
+                self.master_id,
+                strings.msg.help.format(first_name='Master'),
+                parse_mode='HTML'
+            )
+        except:
+            return False
         self.db.common.state = 'set_start'
         self.send_state()
+        return True
 
 if __name__ == '__main__':
     bot = ProxyBot(config.token, config.my_id)

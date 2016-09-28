@@ -1,11 +1,12 @@
 from flask import Flask, request
+from time import sleep
+import urllib.request
 import telebot
 
 import proxy_bot
 import db_helper
 import config
 import model
-import strings
 
 app = Flask(__name__)
 
@@ -22,7 +23,12 @@ class WebhookMasterBot(telebot.TeleBot):
 
         sub_bots = dict()
         for b in db.bots.get_all():
-            sub_bot = proxy_bot.ProxyBot(b.token, b.master_id)
+            try:
+                sub_bot = proxy_bot.ProxyBot(b.token, b.master_id)
+            except Exception:
+                db.bots.delete(b.id)
+                continue
+            sleep(10)
             sub_bot.set_webhook(
                 url=baseurl + 'proxybot/' + sub_bot.token,
                 certificate=cert
@@ -45,7 +51,10 @@ class WebhookMasterBot(telebot.TeleBot):
         @server.route('/proxybot/<sub_token>', methods=['POST'])
         def sub_bot_updates(sub_token):
             update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
-            sub_bots[sub_token].process_new_updates([update])
+            if sub_token in sub_bots:
+                sub_bots[sub_token].process_new_updates([update])
+            else:
+                urllib.request.urlopen('https://api.telegram.org/bot{}/setWebhook'.format(sub_token))
             return 'OK'
 
         @bot.message_handler(commands=['start', 'help'])
@@ -71,25 +80,26 @@ More info at https://github.com/p-hash/proxybot''')
                 bot.reply_to(message, "An error occured: the token is invalid or you haven't started your bot yet.")
                 return
 
-            try:
-                new_bot.start()
-                bot.reply_to(message, "Your @{} started".format(new_bot.username))
-            except telebot.apihelper.ApiException:
-                bot.reply_to(
-                    message,
-                    "<a href=telegram.me/{}>Start your bot!</a>".format(new_bot.username),
-                    parse_mode='HTML'
-                )
+            bot.reply_to(message, "Your bot will start in a minute..")
+            db.bots.create(model.Bot(new_bot))
+            sub_bots[new_bot_token] = new_bot
+            sleep(10)
 
-            if new_bot:
-                db.bots.create(model.Bot(new_bot))
-                self.sub_bots[new_bot_token] = new_bot
-                new_bot.set_webhook(
-                    url=baseurl + '/proxybot/' + new_bot_token,
-                    certificate=cert
+            new_bot.set_webhook(
+                url=baseurl + 'proxybot/' + new_bot_token,
+                certificate=cert
+            )
+            if cert:
+                cert.seek(0, 0)
+            sleep(10)
+
+            if new_bot.start():
+                bot.reply_to(message, "Your @{} started".format(new_bot.username))
+            else:
+                bot.send_message(
+                    message.chat.id,
+                    "Start your @{0} at https://telegram.me/{0} !".format(new_bot.username)
                 )
-                if cert:
-                    cert.seek(0, 0)
 
         self.set_webhook(
             url=baseurl + path,
