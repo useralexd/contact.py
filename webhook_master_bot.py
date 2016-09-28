@@ -28,7 +28,7 @@ class WebhookMasterBot(telebot.TeleBot):
             except Exception:
                 db.bots.delete(b.id)
                 continue
-            sleep(10)
+            sleep(1)
             sub_bot.set_webhook(
                 url=baseurl + 'proxybot/' + sub_bot.token,
                 certificate=cert
@@ -62,6 +62,17 @@ class WebhookMasterBot(telebot.TeleBot):
             bot.reply_to(message, '''\
 Semd me api_token and I will spawn an proxy_bot for you.
 More info at https://github.com/p-hash/proxybot''')
+
+        @bot.message_handler(commands=['delbot'])
+        def del_bot(message):
+            b = db.bots.get_by_master(message.from_user.id)
+            if b:
+                sub_bots.pop(b.token, None)
+                db.bots.delete(b.id)
+                bot.reply_to(message, "Your bot was deleted. If you still cant create new one -- contact @phash_bot")
+            else:
+                bot.reply_to(message, "You dont have your own ProxyBot yet.")
+
 
         @bot.message_handler()
         def check_token(message):
