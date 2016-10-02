@@ -318,7 +318,7 @@ class ProxyBot(telebot.TeleBot):
                     markup.add(
                         types.InlineKeyboardButton(
                             "{index}. {chat:btn}".format(index=index, chat=chat),
-                            callback_data='chat_show_{}'.format(chat.id)
+                            callback_data='log_{}_0'.format(chat.id)
                         )
                     )
             else:
@@ -348,7 +348,7 @@ class ProxyBot(telebot.TeleBot):
                     markup.add(
                         types.InlineKeyboardButton(
                             "{index}. {chat:btn}".format(index=index, chat=chat),
-                            callback_data='chat_show_{}'.format(chat.id)
+                            callback_data='log_{}_0'.format(chat.id)
                         )
                     )
             else:
