@@ -431,7 +431,9 @@ class ProxyBot(telebot.TeleBot):
         # Sends texts, audios, document etc to the admin
         @bot.message_handler(
             func=lambda message: message.chat.id != master_id,
-            content_types=['text', 'audio', 'document', 'photo', 'sticker', 'video', 'voice', 'location', 'contact']
+            content_types=[
+                'text', 'audio', 'document', 'photo', 'sticker',
+                'video', 'voice', 'location', 'contact', 'venue']
         )
         def handle_all(message):
             chat = db.chat.get_by_id(message.chat.id)  # get chat from database
@@ -525,6 +527,22 @@ class ProxyBot(telebot.TeleBot):
                     chat_id,
                     latitude=message.location.latitude,
                     longitude=message.location.longitude
+                )
+            elif message.content_type == 'contact':
+                bot.send_contact(
+                    chat_id,
+                    phone_number=message.contact.phone_number,
+                    first_name=message.contact.first_name,
+                    last_name=message.contact.last_name
+                )
+            elif message.content_type == 'venue':
+                bot.send_venue(
+                    chat_id,
+                    latitude=message.venue.location.latitude,
+                    longitude=message.venue.location.longitude,
+                    title=message.venue.title,
+                    address=message.venue.address,
+                    foursquare_id=message.venue.foursquare_id
                 )
             else:
                 sent_msg = bot.send_message(master_id, strings.msg.invalid_content_type)
