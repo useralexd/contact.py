@@ -2,18 +2,7 @@ from telebot import types as types
 import bson
 import base64
 
-import config
-
-
-def to_python(value):
-    try:
-        return bson.ObjectId(base64.urlsafe_b64decode(value))
-    except (bson.errors.InvalidId, ValueError, TypeError):
-        raise ValueError
-
-
-def to_url(value):
-    return base64.urlsafe_b64encode(value.binary)
+import html_helper
 
 
 def short_id(value):
@@ -50,7 +39,6 @@ class User(Model, types.User):
                 kwargs.get('last_name'),
                 kwargs.get('username'),
             )
-        self.blocked = kwargs.get('blocked') or False
         super().__init__(*args)
 
 
@@ -59,6 +47,8 @@ class Message(Model, types.Message):
     def __init__(self, *args, **kwargs):
         if args:
             self.id = bson.ObjectId()
+            self.short_id = short_id(self.id)
+            self.html = None
             super().__init__(*args)
         else:
             super().__init__(
@@ -70,27 +60,37 @@ class Message(Model, types.Message):
                 options={}
             )
             self.id = kwargs['_id']
-            self.text = kwargs['text']
+            self.short_id = kwargs['short_id']
+            self.text = kwargs.get('text')
+            self.html = kwargs.get('html')
+            if 'entities' in kwargs:
+                self.entities = [MessageEntity(**ent) for ent in kwargs.get('entities')]
 
     def to_dic(self):
         d = dict()
         d['_id'] = self.id
-        d['short_id'] = short_id(self.id)
+        d['short_id'] = self.short_id
 
         d['message_id'] = self.message_id
         d['from_user'] = self.from_user.to_dic()
         d['date'] = self.date
         d['chat'] = self.chat.to_dic()
         d['content_type'] = self.content_type
+        if self.entities:
+            d['entities'] = [entity.to_dic() for entity in self.entities]
 
-        if self.text:
-            d['text'] = self.text
-        else:
-            d['text'] = 'Non text message: /msg' + d['short_id']
+        d['text'] = self.text
+        d['html'] = self.html
+
         return d
 
     def __format__(self, format_spec):
-        return """{user}: {text}""".format(user=self.from_user.first_name, text=self.text)
+        if not self.html:
+            self.html = html_helper.to_html(self)
+        return """{user}: {text}""".format(
+            user=html_helper.escape_html(self.from_user.first_name),
+            text=self.html
+        )
 
 
 class Chat(Model, types.Chat):
@@ -117,9 +117,9 @@ class Chat(Model, types.Chat):
         if format_spec == 'html':
             text = '<code>[' + self.type + '] </code>'
             if self.title:
-                text += self.title
+                text += html_helper.escape_html(self.title)
             elif self.first_name:
-                text += self.first_name
+                text += html_helper.escape_html(self.first_name)
             else:
                 text += '<code>_unnamed_</code>'
 
@@ -133,9 +133,41 @@ class Chat(Model, types.Chat):
                 text += self.first_name
             else:
                 text += '_unnamed_'
+        elif format_spec == 'full':
+            text = '<b>Chat</b>\n<code>Id:</code> {id}\n<code>Type:</code> {type}'
+            if self.title:
+                text += '\n<code>Title:</code> {title}'
+            if self.username:
+                text += '\n<code>Username:</code> @{username}'
+            if self.first_name:
+                text += '\n<code>First Name:</code> {first_name}'
+            if self.last_name:
+                text += '\n<code>Last Name:</code> {last_name}'
+            text += '<code>Is blocked?</code> <i>{blocked}</i>'
+            text = text.format(
+                id=self.id,
+                type=self.type,
+                title=html_helper.escape_html(self.title),
+                username=self.username,
+                first_name=html_helper.escape_html(self.first_name),
+                last_name=html_helper.escape_html(self.last_name),
+                blocked=self.blocked
+            )
         else:
             text = ''
         return text
+
+
+class MessageEntity(Model, types.MessageEntity):
+    def __init__(self, *args, **kwargs):
+        if not args:
+            args = (
+                kwargs['type'],
+                int(kwargs['offset']),
+                int(kwargs['length']),
+                kwargs.get('url')
+            )
+        super().__init__(*args)
 
 
 class Bot(Model):
@@ -154,10 +186,12 @@ class Bot(Model):
             self.master_id = kwargs['master_id']
             self.token = kwargs['token']
 
+
 # Replaces classes in telebot.types
 def replace_classes():
     types.User = User
     types.Message = Message
     types.Chat = Chat
+    types.MessageEntity = MessageEntity
 
 replace_classes()

@@ -112,7 +112,7 @@ class ProxyBot(telebot.TeleBot):
                 buttons.append(
                     types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
             else:
-                text = strings.msg.chat_full.format(chat=chat)
+                text = '{:full}'.format(chat)
                 buttons.append(
                     types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
 

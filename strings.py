@@ -14,16 +14,6 @@ class btn:
 
 
 class msg:
-    chat_full = '''<b>Chat</b>
-<code>Id:</code> {chat.id}
-<code>Type:</code> {chat.type}
-<code>Title:</code> {chat.title}
-<code>Username:</code> @{chat.username}
-<code>First Name:</code> {chat.first_name}
-<code>Last Name:</code> {chat.last_name}
-<code>Is blocked?</code> <i>{chat.blocked}</i>
-'''
-    
     help = '''Hey {first_name}!
 
 I will notify you about all messages sent to me. You can use me to hide your real telegram account.
