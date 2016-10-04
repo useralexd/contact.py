@@ -14,6 +14,7 @@ class btn:
 
 
 class msg:
+    sent = '<b>Sent successfully!</b>'
     help = '''Hey {first_name}!
 
 I will notify you about all messages sent to me. You can use me to hide your real telegram account.

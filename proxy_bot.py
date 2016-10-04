@@ -494,24 +494,41 @@ class ProxyBot(telebot.TeleBot):
                 return
 
             sent_msg = None
+            try:
+                sent_msg = resend(message, chat_id)
+            except telebot.apihelper.ApiException as e:
+                pass
+            finally:
+                if sent_msg:
+                    markup = types.InlineKeyboardMarkup()
+                    markup.add(types.InlineKeyboardButton(
+                        strings.btn.show_log,
+                        callback_data='log_{}_0'.format(sent_msg.chat.id))
+                    )
+                    bot.send_message(self.master_id, strings.msg.sent, parse_mode='HTML', reply_markup=markup)
+
+            db.msg.create(sent_msg)  # log message in db
+            db.common.update_last_seen()
+
+        def resend(message, chat_id):
             if message.content_type == 'text':
                 bot.send_chat_action(chat_id, action='typing')
-                sent_msg = bot.send_message(chat_id, message.md_form, parse_mode='Markdown')
+                return bot.send_message(chat_id, message.md_form, parse_mode='Markdown')
             elif message.content_type == "sticker":
                 bot.send_chat_action(chat_id, action='typing')
-                sent_msg = bot.send_sticker(chat_id, message.sticker.file_id)
+                return bot.send_sticker(chat_id, message.sticker.file_id)
             elif message.content_type == "photo":
                 bot.send_chat_action(chat_id, action='upload_photo')
-                sent_msg = bot.send_photo(chat_id, list(message.photo)[-1].file_id)
+                return bot.send_photo(chat_id, list(message.photo)[-1].file_id)
             elif message.content_type == "voice":
                 bot.send_chat_action(chat_id, action='record_audio')
-                sent_msg = bot.send_voice(chat_id, message.voice.file_id, duration=message.voice.duration)
+                return bot.send_voice(chat_id, message.voice.file_id, duration=message.voice.duration)
             elif message.content_type == "document":
                 bot.send_chat_action(chat_id, action='upload_document')
-                sent_msg = bot.send_document(chat_id, data=message.document.file_id)
+                return bot.send_document(chat_id, data=message.document.file_id)
             elif message.content_type == "audio":
                 bot.send_chat_action(chat_id, action='upload_audio')
-                sent_msg = bot.send_audio(
+                return bot.send_audio(
                     chat_id,
                     performer=message.audio.performer,
                     audio=message.audio.file_id,
@@ -520,24 +537,24 @@ class ProxyBot(telebot.TeleBot):
                 )
             elif message.content_type == "video":
                 bot.send_chat_action(chat_id, action='upload_video')
-                sent_msg = bot.send_video(chat_id, data=message.video.file_id, duration=message.video.duration)
+                return bot.send_video(chat_id, data=message.video.file_id, duration=message.video.duration)
             elif message.content_type == "location":
                 # No Google Maps on my phone, so this code is untested, should work fine though
                 bot.send_chat_action(chat_id, action='find_location')
-                sent_msg = bot.send_location(
+                return bot.send_location(
                     chat_id,
                     latitude=message.location.latitude,
                     longitude=message.location.longitude
                 )
             elif message.content_type == 'contact':
-                bot.send_contact(
+                return bot.send_contact(
                     chat_id,
                     phone_number=message.contact.phone_number,
                     first_name=message.contact.first_name,
                     last_name=message.contact.last_name
                 )
             elif message.content_type == 'venue':
-                bot.send_venue(
+                return bot.send_venue(
                     chat_id,
                     latitude=message.venue.location.latitude,
                     longitude=message.venue.location.longitude,
@@ -546,10 +563,8 @@ class ProxyBot(telebot.TeleBot):
                     foursquare_id=message.venue.foursquare_id
                 )
             else:
-                sent_msg = bot.send_message(master_id, strings.msg.invalid_content_type)
-
-            db.msg.create(sent_msg)  # log message in db
-            db.common.update_last_seen()
+                bot.send_message(master_id, strings.msg.invalid_content_type)
+                return None
 
         print('@{} has started for {}'.format(self.username, self.master_id))
 
