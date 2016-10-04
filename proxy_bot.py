@@ -481,17 +481,17 @@ class ProxyBot(telebot.TeleBot):
         @bot.callback_query_handler(func=lambda cb: cb.data.startswith('reply_'))
         def reply_to(cb):
             db.common.replying_to = int(cb.data.replace('reply_', '', 1))
-            self.pre_message_subscribers_next_step[cb.message.chat.id] = []  # del current next_step_handler
-            bot.register_next_step_handler(cb.message, send_reply)  # register new
             bot.answer_callback_query(cb.id, strings.ans.reply)
 
         # handles admin's replies
+        @bot.message_handler(
+            func=lambda m: db.common.replying_to,
+            content_types=[
+                'text', 'audio', 'document', 'photo', 'sticker',
+                'video', 'voice', 'location', 'contact', 'venue']
+        )
         def send_reply(message):
-            if db.common.replying_to:
-                chat_id = db.common.replying_to
-            else:
-                bot.send_message(master_id, strings.msg.noone_to_reply)
-                return
+            chat_id = db.common.replying_to
 
             sent_msg = None
             try:
