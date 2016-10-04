@@ -92,6 +92,20 @@ class Message(Model, types.Message):
             text=self.html
         )
 
+    @property
+    def html_form(self):
+        return html_helper.entities_to_html(self.text, self.entities)
+
+    @property
+    def md_form(self):
+        return html_helper.entities_to_md(self.text, self.entities)
+
+    # not used for now
+    def clear_entities(self):
+        for entity in self.entities:
+            if entity.type in ['mention', 'hashtag', 'bot_command', 'url', 'email', 'text_mention']:
+                self.entities.remove(entity)
+
 
 class Chat(Model, types.Chat):
     def __init__(self, *args, **kwargs):

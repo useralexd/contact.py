@@ -493,9 +493,10 @@ class ProxyBot(telebot.TeleBot):
                 bot.send_message(master_id, strings.msg.noone_to_reply)
                 return
 
+            sent_msg = None
             if message.content_type == 'text':
                 bot.send_chat_action(chat_id, action='typing')
-                sent_msg = bot.send_message(chat_id, message.text)
+                sent_msg = bot.send_message(chat_id, message.md_form, parse_mode='Markdown')
             elif message.content_type == "sticker":
                 bot.send_chat_action(chat_id, action='typing')
                 sent_msg = bot.send_sticker(chat_id, message.sticker.file_id)

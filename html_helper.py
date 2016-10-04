@@ -28,12 +28,38 @@ def entities_to_html(text, entities):
         if entity.type == 'bold' or entity.type == 'italic':
             new_text += '<{t}>{m}</{t}>'.format(t=entity.type[0], m=m)
         elif entity.type == 'code' or entity.type == 'pre':
-            new_text = '<{t}>{m}</{t}>'.format(t=entity.type, m=m)
+            new_text += '<{t}>{m}</{t}>'.format(t=entity.type, m=m)
         elif entity.type == 'text_link':
-            new_text = '<a href="{url}">{m}</a>'.format(url=entity.url, m=m)
+            new_text += '<a href="{url}">{m}</a>'.format(url=entity.url, m=m)
         else:
             new_text += m
     new_text += escape_html(text[p:])
+    return new_text
+
+
+def entities_to_md(text, entities):
+    if entities is None:
+        return text
+    new_text = ''
+    p = 0
+    for entity in entities:
+        l = entity.offset
+        r = l + entity.length
+        new_text += text[p:l]
+        p = r
+        if entity.type == 'bold':
+            new_text += '*{}*'.format(text[l:r])
+        elif entity.type == 'italic':
+            new_text += '_{}_'.format(text[l:r])
+        elif entity.type == 'code':
+            new_text += '`{}`'.format(text[l:r])
+        elif entity.type == 'pre':
+            new_text += '```{}```'.format(text[l:r])
+        elif entity.type == 'text_link':
+            new_text += '[{}]({})'.format(text[l:r], entity.url)
+        else:
+            new_text += text[l:r]
+    new_text += text[p:]
     return new_text
 
 
