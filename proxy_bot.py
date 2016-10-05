@@ -326,7 +326,7 @@ class ProxyBot(telebot.TeleBot):
             else:
                 s = strings.msg.no_items[list_type]
             if pages_count > 1:
-                markup.row(*pager_buttons('list_' + list_type + '_{}', page_no, pages_count))
+                markup.row(*pager_buttons('list_' + list_type + '_', page_no, pages_count))
             markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
             bot.edit_message_text(
                 s,
