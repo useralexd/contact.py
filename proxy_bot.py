@@ -113,8 +113,9 @@ class ProxyBot(telebot.TeleBot):
                     types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
             else:
                 text = '{:full}'.format(chat)
-                buttons.append(
-                    types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
+                if chat.type == 'private':
+                    buttons.append(
+                        types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
 
             if chat.blocked:
                 buttons.append(
@@ -127,14 +128,6 @@ class ProxyBot(telebot.TeleBot):
             markup.add(*buttons)
             markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
             return text, markup
-
-        @bot.message_handler(func=lambda m: m.chat.type != 'private')
-        def leave(message):
-            try:
-                bot.reply_to(message, 'I work only in private chats')
-            except telebot.apihelper.ApiException:
-                pass
-            bot.leave_chat(message.chat.id)
 
         @bot.message_handler(func=lambda message: message.chat.id == master_id, commands=['start'])
         def start_menu(message):
@@ -422,15 +415,45 @@ class ProxyBot(telebot.TeleBot):
         # Handle always first "/start" message when new chat with your bot is created (for users other than admin)
         @bot.message_handler(func=lambda message: message.chat.id != master_id, commands=["start"])
         def command_start_all(message):
-            bot.send_message(
-                message.chat.id,
-                db.common.startmsg.format(name=message.from_user.first_name)
-            )
+            if message.chat.type == 'private':
+                bot.send_message(
+                    message.chat.id,
+                    db.common.startmsg.format(name=message.from_user.first_name)
+                )
+
+        @bot.message_handler(
+            func=lambda m: m.chat.type != 'private',
+            content_types=[
+                'new_chat_member', 'left_chat_member', 'new_chat_title',
+                'group_chat_created', 'supergroup_chat_created', 'channel_chat_created',
+                'migrate_to_chat_id', 'migrate_from_chat_id']
+        )
+        def non_private(message):
+            chat = db.chat.get_by_id(message.chat.id)  # get chat from database
+            if not chat:  # If chat is new
+                chat = message.chat
+            else:
+                chat.update(message.chat)  # updates chat data
+            db.chat.update(chat)  # pushes updated data back to db
+
+            if chat.blocked:
+                bot.leave_chat(chat.id)
+
+            text, markup = get_chatview_markup(chat)
+            bot.send_message(self.master_id, text, reply_markup=markup)
+            # if message.content_type == 'new_chat_member' and message.new_chat_member.id == self.id:
+            #     if chat.type == 'channel':
+            #         bot.send_message(self.master_id, strings.msg.new_channel.format(chat))
+            #     elif chat.type == 'group':
+            #         bot.send_message(self.master_id, strings.msg.new_group.format(chat))
+            #     else:
+            #         bot.send_message(self.master_id, strings.msg.new_sgroup)
+
 
         # Handle the messages which are not sent by the admin user(the one who is handling the bot)
         # Sends texts, audios, document etc to the admin
         @bot.message_handler(
-            func=lambda message: message.chat.id != master_id,
+            func=lambda message: message.chat.id != master_id and message.chat.type == 'private',
             content_types=[
                 'text', 'audio', 'document', 'photo', 'sticker',
                 'video', 'voice', 'location', 'contact', 'venue']
@@ -445,14 +468,9 @@ class ProxyBot(telebot.TeleBot):
 
             # checks whether the admin has blocked that chat via bot or not
             if chat.blocked:
-                if chat.type == 'private':
-                    # if blocked: notify user about it
-                    bot.send_message(message.chat.id, db.common.blockmsg)
-                else:
-                    bot.leave_chat(chat.id)
-
-            else:
-                # if not blocked:
+                # if blocked: notify user about it
+                bot.send_message(message.chat.id, db.common.blockmsg)
+            else:  # not blocked
                 db.msg.create(message)  # log message in db
 
                 text = strings.msg.new_msg.format(chat=chat, message=message)
@@ -492,7 +510,8 @@ class ProxyBot(telebot.TeleBot):
         )
         def send_reply(message):
             chat_id = db.common.replying_to
-
+            if not chat_id:
+                return
             sent_msg = None
             try:
                 sent_msg = resend(message, chat_id)
@@ -509,6 +528,7 @@ class ProxyBot(telebot.TeleBot):
                     )
                     bot.send_message(self.master_id, strings.msg.sent, parse_mode='HTML', reply_markup=markup)
                     db.msg.create(sent_msg)  # log message in db
+                    db.common.replying_to = chat_id
                     db.common.update_last_seen()
 
         def resend(message, chat_id):
