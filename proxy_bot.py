@@ -106,11 +106,14 @@ class ProxyBot(telebot.TeleBot):
                 if log_page == 0:
                     log_page = log_pages_count  # if page_no is not set, let it be the last page
 
-                for msg in msgs:
-                    text += '{}\n'.format(msg)
-                markup.row(*pager_buttons('log_{}_'.format(chat.id), log_page, log_pages_count))
-                buttons.append(
-                    types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
+                if msgs:
+                    for msg in msgs:
+                        text += '{}\n'.format(msg)
+                    markup.row(*pager_buttons('log_{}_'.format(chat.id), log_page, log_pages_count))
+                    buttons.append(
+                        types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
+                else:
+                    text = '{:full}'.format(chat)
             else:
                 text = '{:full}'.format(chat)
                 buttons.append(
@@ -451,7 +454,7 @@ class ProxyBot(telebot.TeleBot):
             # if bot is mentioned or replied, handle as private message
             if ((message.text and '@{}'.format(self.username) in message.text) or
                     (message.caption and '@{}'.format(self.username) in message.caption) or
-                    message.reply_to_message.from_user.id == self.id):
+                    (message.reply_to_message and message.reply_to_message.from_user.id == self.id)):
                 handle_all(message)
 
         # Handle the messages which are not sent by the admin user(the one who is handling the bot)

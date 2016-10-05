@@ -81,6 +81,8 @@ class MessageDAO(DAO):
     def get_chat_page(self, chat_id, page_no=0, page_size=4):
         cursor = self.coll.find({'bot_id': self.bot_id, 'chat.id': chat_id}).sort('_id', 1)
         count = cursor.count()
+        if count < 1:
+            return 0, None
         pages_count = count // page_size + (1 if count % page_size else 0)
         if page_no == 0:
             page_no = pages_count
