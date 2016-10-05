@@ -497,7 +497,9 @@ class ProxyBot(telebot.TeleBot):
             try:
                 sent_msg = resend(message, chat_id)
             except telebot.apihelper.ApiException as e:
-                pass
+                json = e.result.json()
+                description = json['description']
+                bot.send_message(self.master_id, strings.msg.error.format(description))
             finally:
                 if sent_msg:
                     markup = types.InlineKeyboardMarkup()
@@ -506,9 +508,8 @@ class ProxyBot(telebot.TeleBot):
                         callback_data='log_{}_0'.format(sent_msg.chat.id))
                     )
                     bot.send_message(self.master_id, strings.msg.sent, parse_mode='HTML', reply_markup=markup)
-
-            db.msg.create(sent_msg)  # log message in db
-            db.common.update_last_seen()
+                    db.msg.create(sent_msg)  # log message in db
+                    db.common.update_last_seen()
 
         def resend(message, chat_id):
             if message.content_type == 'text':

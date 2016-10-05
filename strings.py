@@ -54,6 +54,7 @@ Here is the main menu. Let me describe the buttons below:
     none_blocked = '''You haven't blocked any chat yet.'''
 
     invalid_content_type = 'Invalid content type'
+    error = 'Error occured\n{}'
 
     master_intro = '''Okay, lets set up messages for your users.'''
     master_edited = '''\
