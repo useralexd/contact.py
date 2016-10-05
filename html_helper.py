@@ -13,11 +13,6 @@ def escape_html(text):
         return None
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-def escape_md(text):
-    if text is None:
-        return None
-    return text.replace('*', '\*').replace('_', '\_').replace('`', '\`')
-
 
 def entities_to_html(text, entities):
     if entities is None:
@@ -52,7 +47,7 @@ def entities_to_md(text, entities):
     for entity in entities:
         l = entity.offset
         r = l + entity.length
-        new_text += escape_md(text[p:l])
+        new_text += text[p:l]
         p = r
         if entity.type == 'bold':
             new_text += '*{}*'.format(text[l:r].replace('*', '\*'))
@@ -65,8 +60,8 @@ def entities_to_md(text, entities):
         elif entity.type == 'text_link':
             new_text += '[{}]({})'.format(text[l:r], entity.url)
         else:
-            new_text += escape_md(text[l:r])
-    new_text += escape_md(text[p:])
+            new_text += text[l:r]
+    new_text += text[p:]
     return new_text
 
 
