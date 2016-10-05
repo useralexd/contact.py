@@ -524,13 +524,13 @@ class ProxyBot(telebot.TeleBot):
                 return bot.send_sticker(chat_id, message.sticker.file_id)
             elif message.content_type == "photo":
                 bot.send_chat_action(chat_id, action='upload_photo')
-                return bot.send_photo(chat_id, list(message.photo)[-1].file_id)
+                return bot.send_photo(chat_id, list(message.photo)[-1].file_id, caption=message.caption)
             elif message.content_type == "voice":
                 bot.send_chat_action(chat_id, action='record_audio')
                 return bot.send_voice(chat_id, message.voice.file_id, duration=message.voice.duration)
             elif message.content_type == "document":
                 bot.send_chat_action(chat_id, action='upload_document')
-                return bot.send_document(chat_id, data=message.document.file_id)
+                return bot.send_document(chat_id, data=message.document.file_id, caption=message.caption)
             elif message.content_type == "audio":
                 bot.send_chat_action(chat_id, action='upload_audio')
                 return bot.send_audio(
@@ -542,7 +542,12 @@ class ProxyBot(telebot.TeleBot):
                 )
             elif message.content_type == "video":
                 bot.send_chat_action(chat_id, action='upload_video')
-                return bot.send_video(chat_id, data=message.video.file_id, duration=message.video.duration)
+                return bot.send_video(
+                    chat_id,
+                    data=message.video.file_id,
+                    duration=message.video.duration,
+                    caption=message.caption
+                )
             elif message.content_type == "location":
                 # No Google Maps on my phone, so this code is untested, should work fine though
                 bot.send_chat_action(chat_id, action='find_location')
