@@ -8,8 +8,12 @@ class btn:
     back = 'Back'
     set_messages = 'Set messages'
     help = 'Help'
-    list_chats = 'List chats'
-    list_blocked = 'List blocked chats'
+    list = {
+        'user': 'Users',
+        'group': 'Groups',
+        'channel': 'Channels',
+        'blocked': 'Blocked'
+    }
     menu = 'Main menu'
 
 
@@ -36,13 +40,10 @@ Use inline buttons to interact with me. /start command will show you the main me
 <b>For any help and queries please contact --</b> <a href="telegram.me/phash_bot">me</a> \
 <b>or check out</b> <a href="https://github.com/p-hash/proxybot">source code</a>.'''
     menu = '''Hey {first_name}!
-
 Here is the main menu. Let me describe the buttons below:
 
-<b>List users</b> and <b>List blocked users</b> will show these lists respectively.
-
+<b>Users</b>, <b>Groups</b>, <b>Channels</b> and <b>Blocked</b> will show you those lists respectively.
 <b>Set messages</b> will let you set the default messages I'll answer to users based on situation.
-
 <b>Help</b> sends little help, containing a developer contact and source code link.
 '''
     new_msg = '''New message from {chat:html}
@@ -59,10 +60,18 @@ channel to send messages to it!</b>'''
 
     noone_to_reply = 'No one to reply!'
 
-    chatlist_header = 'Chat list: \n\n'
-    no_chats = 'There are no chats yet.'
-    blockedlist_header = 'Blocked list: \n\n'
-    none_blocked = '''You haven't blocked any chat yet.'''
+    list_header = {
+        'user': 'Private chat list: \n\n',
+        'group': 'Group chat list: \n\n',
+        'channel': 'Channels list: \n\n',
+        'blocked': 'Blocked list: \n\n'
+    }
+    no_items = {
+        'user': 'There are no chats yet',
+        'group': 'The bot wasn\'t added to any group yet',
+        'channel': 'Bot wasn\'t added to any channel yet',
+        'blocked': 'You haven\'t blocked any chat yet'
+    }
 
     invalid_content_type = 'Invalid content type'
     error = 'Error occured\n{}'

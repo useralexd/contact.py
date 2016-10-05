@@ -137,9 +137,12 @@ class ProxyBot(telebot.TeleBot):
                 command_help(message)
                 master_start(message)
                 return
-            markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton(strings.btn.list_chats, callback_data='list_chats_1'))
-            markup.add(types.InlineKeyboardButton(strings.btn.list_blocked, callback_data='list_blocked_1'))
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            buttons = []
+            for list_type in ['user', 'group', 'channel', 'blocked']:
+                buttons.append(types.InlineKeyboardButton(strings.btn.list[list_type],
+                                                          callback_data='list_{}_1'.format(list_type)))
+            markup.add(*buttons)
             markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
             markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
             bot.send_message(
@@ -151,9 +154,12 @@ class ProxyBot(telebot.TeleBot):
 
         @bot.callback_query_handler(func=lambda cb: cb.data == 'menu')
         def cb_menu(cb):
-            markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton(strings.btn.list_chats, callback_data='list_chats_1'))
-            markup.add(types.InlineKeyboardButton(strings.btn.list_blocked, callback_data='list_blocked_1'))
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            buttons = []
+            for list_type in ['user', 'group', 'channel', 'blocked']:
+                buttons.append(types.InlineKeyboardButton(strings.btn.list[list_type],
+                                                          callback_data='list_{}_1'.format(list_type)))
+            markup.add(*buttons)
             markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
             markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
             bot.edit_message_text(
@@ -301,43 +307,14 @@ class ProxyBot(telebot.TeleBot):
                 bot.answer_callback_query(cb.id, strings.ans.error)
 
         # handles inline keyboard buttons under the chats list
-        @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_blocked_'))
-        def blocked_list_pages(cb):
-            page_no = int(cb.data.replace('list_blocked_', '', 1))
-            pages_count, chats = db.chat.get_blocked_page(page_no)
-            markup = types.InlineKeyboardMarkup()
-            if chats:
-                s = strings.msg.blockedlist_header
-                for index, chat in enumerate(chats):
-                    s += "<code>{index}.</code> {chat:html}\n".format(index=index + 1, chat=chat)
-                    markup.add(
-                        types.InlineKeyboardButton(
-                            "{index}. {chat:btn}".format(index=index + 1, chat=chat),
-                            callback_data='log_{}_0'.format(chat.id)
-                        )
-                    )
-            else:
-                s = strings.msg.none_blocked
-            if pages_count > 1:
-                markup.row(*pager_buttons('list_blocked_', page_no, pages_count))
-            markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
-            bot.edit_message_text(
-                s,
-                parse_mode='HTML',
-                reply_markup=markup,
-                message_id=cb.message.message_id,
-                chat_id=cb.from_user.id
-            )
-            bot.answer_callback_query(cb.id, strings.ans.done)
-
-        # handles inline keyboard buttons under the chats list
-        @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_chats_'))
+        @bot.callback_query_handler(func=lambda cb: cb.data.startswith('list_'))
         def chat_list_pages(cb):
-            page_no = int(cb.data.replace('list_chats_', '', 1))
-            pages_count, chats = db.chat.get_page(page_no)
+            list_type, page_no = cb.data.split('_')[1:]
+            page_no = int(page_no)
+            pages_count, chats = db.chat.get_page(list_type, page_no)
             markup = types.InlineKeyboardMarkup()
             if chats:
-                s = strings.msg.chatlist_header
+                s = strings.msg.list_header[list_type]
                 for index, chat in enumerate(chats):
                     s += "<code>{index}.</code> {chat:html}\n".format(index=index + 1, chat=chat)
                     markup.add(
@@ -347,9 +324,9 @@ class ProxyBot(telebot.TeleBot):
                         )
                     )
             else:
-                s = strings.msg.no_chats
+                s = strings.msg.no_items[list_type]
             if pages_count > 1:
-                markup.row(*pager_buttons('list_chats_', page_no, pages_count))
+                markup.row(*pager_buttons('list_' + list_type + '_{}', page_no, pages_count))
             markup.add(types.InlineKeyboardButton(strings.btn.menu, callback_data='menu'))
             bot.edit_message_text(
                 s,

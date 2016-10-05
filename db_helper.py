@@ -50,6 +50,8 @@ class DAO:
             query['bot_id'] = self.bot_id
         cursor = self.coll.find(query).sort('_id', 1)
         count = cursor.count()
+        if count < 1:
+            return 0, None
         pages_count = count // page_size
         if count % page_size:
             pages_count += 1
@@ -67,11 +69,30 @@ class ChatDAO(DAO):
     def __init__(self, coll, bot_id):
         super().__init__(coll, model.Chat, bot_id)
 
+    def get_page(self, list_type=None, page_no=1, page_size=5):
+        if list_type == 'user':
+            return self.get_private_page(page_no, page_size)
+        elif list_type == 'group':
+            return self.get_groups_page(page_no, page_size)
+        elif list_type == 'channel':
+            return self.get_channels_page(page_no, page_size)
+        elif list_type == 'blocked':
+            return self.get_blocked_page(page_no, page_size)
+        else:
+            return self._get_page(page_no, page_size)
+
+    def get_private_page(self, page_no=1, page_size=5):
+        return self._get_page(page_no, page_size, {'type': 'private', 'blocked': False})
+
+    def get_groups_page(self, page_no=1, page_size=5):
+        query = {'$or': [{'type': 'group'}, {'type': 'supergroup'}], 'blocked': False}
+        return self._get_page(page_no, page_size, query)
+
+    def get_channels_page(self, page_no=1, page_size=5):
+        return self._get_page(page_no, page_size, {'type': 'channel', 'blocked': False})
+
     def get_blocked_page(self, page_no=1, page_size=5):
         return self._get_page(page_no, page_size, {'blocked': True})
-
-    def get_page(self, page_no=1, page_size=5):
-        return self._get_page(page_no, page_size, {'blocked': False})
 
 
 class MessageDAO(DAO):
