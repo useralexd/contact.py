@@ -434,11 +434,14 @@ class ProxyBot(telebot.TeleBot):
                 chat = message.chat
                 text, markup = get_chatview_markup(chat)
                 if chat.type == 'channel':
-                    bot.send_message(self.master_id, strings.msg.new_channel.format(chat), reply_markup=markup)
+                    bot.send_message(self.master_id, strings.msg.new_channel.format(chat),
+                                     reply_markup=markup, parse_mode='HTML')
                 elif chat.type == 'group':
-                    bot.send_message(self.master_id, strings.msg.new_group.format(chat), reply_markup=markup)
+                    bot.send_message(self.master_id, strings.msg.new_group.format(chat),
+                                     reply_markup=markup, parse_mode='HTML')
                 else:
-                    bot.send_message(self.master_id, strings.msg.new_sgroup.format(chat), reply_markup=markup)
+                    bot.send_message(self.master_id, strings.msg.new_sgroup.format(chat),
+                                     reply_markup=markup, parse_mode='HTML')
             else:
                 chat.update(message.chat)  # updates chat data
             db.chat.update(chat)  # pushes updated data back to db
@@ -515,7 +518,7 @@ class ProxyBot(telebot.TeleBot):
             except telebot.apihelper.ApiException as e:
                 json = e.result.json()
                 description = json['description']
-                bot.send_message(self.master_id, strings.msg.error.format(description))
+                bot.send_message(self.master_id, strings.msg.error.format(description), parse_mode='HTML')
             finally:
                 if sent_msg:
                     markup = types.InlineKeyboardMarkup()

@@ -55,7 +55,7 @@ this group might be updated to supergroup! I can't properly handle this case!!!<
 <b>Make sure your bot is admin of the \
 channel to send messages to it!</b>'''
     new_sgroup = '''The bot was added to {:full}\n
-<b>Don't violate the rules of the group!'''
+<b>Don't violate the rules of the group!</b>'''
 
     noone_to_reply = 'No one to reply!'
 

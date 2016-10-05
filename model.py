@@ -157,7 +157,7 @@ class Chat(Model, types.Chat):
                 text += '\n<code>First Name:</code> {first_name}'
             if self.last_name:
                 text += '\n<code>Last Name:</code> {last_name}'
-            text += '<code>Is blocked?</code> <i>{blocked}</i>'
+            text += '\n<code>Is blocked?</code> <i>{blocked}</i>'
             text = text.format(
                 id=self.id,
                 type=self.type,

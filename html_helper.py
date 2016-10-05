@@ -9,9 +9,13 @@ def shorten_text(msg):
 
 
 def escape_html(text):
+    if text is None:
+        return None
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 def escape_md(text):
+    if text is None:
+        return None
     return text.replace('*', '\*').replace('_', '\_').replace('`', '\`')
 
 
