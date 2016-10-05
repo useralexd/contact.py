@@ -309,10 +309,10 @@ class ProxyBot(telebot.TeleBot):
             if chats:
                 s = strings.msg.blockedlist_header
                 for index, chat in enumerate(chats):
-                    s += "<code>{index}.</code> {chat:html}\n".format(index=index, chat=chat)
+                    s += "<code>{index}.</code> {chat:html}\n".format(index=index + 1, chat=chat)
                     markup.add(
                         types.InlineKeyboardButton(
-                            "{index}. {chat:btn}".format(index=index, chat=chat),
+                            "{index}. {chat:btn}".format(index=index + 1, chat=chat),
                             callback_data='log_{}_0'.format(chat.id)
                         )
                     )
@@ -339,10 +339,10 @@ class ProxyBot(telebot.TeleBot):
             if chats:
                 s = strings.msg.chatlist_header
                 for index, chat in enumerate(chats):
-                    s += "<code>{index}.</code> {chat:html}\n".format(index=index, chat=chat)
+                    s += "<code>{index}.</code> {chat:html}\n".format(index=index + 1, chat=chat)
                     markup.add(
                         types.InlineKeyboardButton(
-                            "{index}. {chat:btn}".format(index=index, chat=chat),
+                            "{index}. {chat:btn}".format(index=index + 1, chat=chat),
                             callback_data='log_{}_0'.format(chat.id)
                         )
                     )
