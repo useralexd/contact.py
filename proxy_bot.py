@@ -113,9 +113,8 @@ class ProxyBot(telebot.TeleBot):
                     types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
             else:
                 text = '{:full}'.format(chat)
-                if chat.type == 'private':
-                    buttons.append(
-                        types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
+                buttons.append(
+                    types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
 
             if chat.blocked:
                 buttons.append(
@@ -449,6 +448,11 @@ class ProxyBot(telebot.TeleBot):
             if chat.blocked:
                 bot.leave_chat(chat.id)
 
+            # if bot is mentioned or replied, handle as private message
+            if ((message.text and '@{}'.format(self.username) in message.text) or
+                    (message.caption and '@{}'.format(self.username) in message.caption) or
+                    message.reply_to_message.from_user.id == self.id):
+                handle_all(message)
 
         # Handle the messages which are not sent by the admin user(the one who is handling the bot)
         # Sends texts, audios, document etc to the admin
