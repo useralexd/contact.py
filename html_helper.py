@@ -11,6 +11,9 @@ def shorten_text(msg):
 def escape_html(text):
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+def escape_md(text):
+    return text.replace('*', '\*').replace('_', '\_').replace('`', '\`')
+
 
 def entities_to_html(text, entities):
     if entities is None:
@@ -45,21 +48,21 @@ def entities_to_md(text, entities):
     for entity in entities:
         l = entity.offset
         r = l + entity.length
-        new_text += text[p:l]
+        new_text += escape_md(text[p:l])
         p = r
         if entity.type == 'bold':
-            new_text += '*{}*'.format(text[l:r])
+            new_text += '*{}*'.format(text[l:r].replace('*', '\*'))
         elif entity.type == 'italic':
-            new_text += '_{}_'.format(text[l:r])
+            new_text += '_{}_'.format(text[l:r].replace('_', '\_'))
         elif entity.type == 'code':
-            new_text += '`{}`'.format(text[l:r])
+            new_text += '`{}`'.format(text[l:r].replace('`', '\`'))
         elif entity.type == 'pre':
             new_text += '```{}```'.format(text[l:r])
         elif entity.type == 'text_link':
             new_text += '[{}]({})'.format(text[l:r], entity.url)
         else:
-            new_text += text[l:r]
-    new_text += text[p:]
+            new_text += escape_md(text[l:r])
+    new_text += escape_md(text[p:])
     return new_text
 
 

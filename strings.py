@@ -14,10 +14,17 @@ class btn:
 
 
 class msg:
-    sent = '<b>Sent successfully!</b>'
+    sent = '<b>Sent successfully!</b> You can send me one more to the same chat.'
     help = '''Hey {first_name}!
 
 I will notify you about all messages sent to me. You can use me to hide your real telegram account.
+
+You can use markdown in your messages to users.
+Simple guide to markdown:
+*bold* _italic_ `code`
+
+You can add me to groups and channels, BUT I won't recieve new messages in them.
+The idea is write to chats from behind the bot using markdown.
 
 You can block users. Blocked user won't bother you via me and will recieve special <b>blocked</b> message.
 
@@ -34,20 +41,24 @@ Here is the main menu. Let me describe the buttons below:
 
 <b>List users</b> and <b>List blocked users</b> will show these lists respectively.
 
-<b>Set messages</b> will let you set special messages for users.
+<b>Set messages</b> will let you set the default messages I'll answer to users based on situation.
 
 <b>Help</b> sends little help, containing a developer contact and source code link.
 '''
     new_msg = '''New message from {chat:html}
 
 {message}'''
+    new_group = '''The bot was added to {:full}\n
+<b>Don't violate the rules and take care: \
+this group might be updated to supergroup! I can't properly handle this case!!!</b>'''
+    new_channel = '''The bot was added to {:full}\n
+<b>Make sure your bot is admin of the \
+channel to send messages to it!</b>'''
+    new_sgroup = '''The bot was added to {:full}\n
+<b>Don't violate the rules of the group!'''
 
     noone_to_reply = 'No one to reply!'
-    bot_started = "Bot started"
-    
-    checked_available = 'Your current status is <b>Available</b>'
-    checked_unavailable = 'Your current status is <b>Unavailable</b>'
-    
+
     chatlist_header = 'Chat list: \n\n'
     no_chats = 'There are no chats yet.'
     blockedlist_header = 'Blocked list: \n\n'
@@ -71,17 +82,23 @@ Your new <b>{msg_type}</b> message:
     master_step_descr = {
         'start': '''Set up your <b>start</b> message.
 
-<b>Start</b> message is what user sees when he/she starts this bot.
+<b>Start</b> message is what user sees when he/she starts this bot. \
+It is my autoreply on user's <code>/start</code> command.
+Example: <pre>Hello there! Write me to contact Admin.</pre>
 
 Your <b>start</b> message''',
         'unavailable': '''Set up your <b>unavailable</b> message.
 
-<b>Unavailable</b> message will be sent to users if you weren't answering for 1 hour.
+<b>Unavailable</b> message will be sent to users if you weren't answering for 1 hour. \
+This autoreply should notify user that you're human so they wont expect fast answer and block the bot.
+Example: <pre>It might take a while for admin to reply... Make sure you haven't block the bot!</pre>
 
 Your <b>unavailable</b> message''',
         'block': '''Set up your <b>block</b> message.
 
-<b>Block</b> message is what user sees if he/she were blocked.
+<b>Block</b> message is what user sees if he/she were blocked. \
+I automatically reply with it instead of resending message to you.
+Example: <pre>Oops, you were blocked. Sorry!</pre>
 
 Your <b>block</b> message'''
     }

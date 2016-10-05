@@ -432,22 +432,19 @@ class ProxyBot(telebot.TeleBot):
             chat = db.chat.get_by_id(message.chat.id)  # get chat from database
             if not chat:  # If chat is new
                 chat = message.chat
+                text, markup = get_chatview_markup(chat)
+                if chat.type == 'channel':
+                    bot.send_message(self.master_id, strings.msg.new_channel.format(chat), reply_markup=markup)
+                elif chat.type == 'group':
+                    bot.send_message(self.master_id, strings.msg.new_group.format(chat), reply_markup=markup)
+                else:
+                    bot.send_message(self.master_id, strings.msg.new_sgroup.format(chat), reply_markup=markup)
             else:
                 chat.update(message.chat)  # updates chat data
             db.chat.update(chat)  # pushes updated data back to db
 
             if chat.blocked:
                 bot.leave_chat(chat.id)
-
-            text, markup = get_chatview_markup(chat)
-            bot.send_message(self.master_id, text, reply_markup=markup)
-            # if message.content_type == 'new_chat_member' and message.new_chat_member.id == self.id:
-            #     if chat.type == 'channel':
-            #         bot.send_message(self.master_id, strings.msg.new_channel.format(chat))
-            #     elif chat.type == 'group':
-            #         bot.send_message(self.master_id, strings.msg.new_group.format(chat))
-            #     else:
-            #         bot.send_message(self.master_id, strings.msg.new_sgroup)
 
 
         # Handle the messages which are not sent by the admin user(the one who is handling the bot)
