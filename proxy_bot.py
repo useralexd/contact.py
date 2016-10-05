@@ -424,9 +424,9 @@ class ProxyBot(telebot.TeleBot):
         @bot.message_handler(
             func=lambda m: m.chat.type != 'private',
             content_types=[
-                'new_chat_member', 'left_chat_member', 'new_chat_title',
-                'group_chat_created', 'supergroup_chat_created', 'channel_chat_created',
-                'migrate_to_chat_id', 'migrate_from_chat_id']
+                'text', 'audio', 'document', 'photo', 'sticker',
+                'video', 'voice', 'location', 'contact', 'venue'
+                'new_chat_member', 'left_chat_member', None]
         )
         def non_private(message):
             chat = db.chat.get_by_id(message.chat.id)  # get chat from database
