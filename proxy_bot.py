@@ -75,7 +75,7 @@ class ProxyBot(telebot.TeleBot):
     def __init__(self, token, master_id):
         super().__init__(token)
         bot = self
-        bot.remove_webhook()
+        # bot.remove_webhook()
         me = bot.get_me()
         self.id = me.id
         self.username = me.username
@@ -660,4 +660,5 @@ class ProxyBot(telebot.TeleBot):
 
 if __name__ == '__main__':
     bot = ProxyBot(config.token, config.my_id)
+    bot.remove_webhook()
     bot.polling(none_stop=True)

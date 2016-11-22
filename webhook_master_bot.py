@@ -28,7 +28,6 @@ class WebhookMasterBot(telebot.TeleBot):
             except Exception:
                 db.bots.delete(b.id)
                 continue
-            sleep(1)
             sub_bot.set_webhook(
                 url=baseurl + 'proxybot/' + sub_bot.token,
                 certificate=cert
@@ -94,7 +93,7 @@ More info at https://github.com/p-hash/proxybot''')
             bot.reply_to(message, "Your bot will start in a minute..")
             db.bots.create(model.Bot(new_bot))
             sub_bots[new_bot_token] = new_bot
-            sleep(10)
+            sleep(1)
 
             new_bot.set_webhook(
                 url=baseurl + 'proxybot/' + new_bot_token,
@@ -102,7 +101,7 @@ More info at https://github.com/p-hash/proxybot''')
             )
             if cert:
                 cert.seek(0, 0)
-            sleep(10)
+            sleep(1)
 
             if new_bot.start():
                 bot.reply_to(message, "Your @{} started".format(new_bot.username))
