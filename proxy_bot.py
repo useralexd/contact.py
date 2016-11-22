@@ -404,7 +404,7 @@ class ProxyBot(telebot.TeleBot):
             func=lambda m: m.chat.type != 'private',
             content_types=[
                 'text', 'audio', 'document', 'photo', 'sticker',
-                'video', 'voice', 'location', 'contact', 'venue'
+                'video', 'voice', 'location', 'contact', 'venue',
                 'new_chat_member', 'left_chat_member', None]
         )
         def non_private(message):
@@ -624,7 +624,7 @@ class ProxyBot(telebot.TeleBot):
                 strings.msg.help.format(first_name='Master'),
                 parse_mode='HTML'
             )
-        except:
+        except telebot.apihelper.ApiException:
             return False
         self.db.common.state = 'set_start'
         self.send_state()
