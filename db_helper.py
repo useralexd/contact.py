@@ -185,6 +185,19 @@ class CommonData:
     def last_seen(self):
         return self._last_seen
 
+    @property
+    def markdown(self):
+        if 'markdown' in self.data:
+            return self.data['markdown']
+        else:
+            return True
+
+    @markdown.setter
+    def markdown(self, value):
+        value = bool(value)
+        self.data['markdown'] = value
+        self.save()
+
     state = 'none'
     prev_msg = None
 

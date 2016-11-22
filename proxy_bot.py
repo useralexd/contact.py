@@ -118,6 +118,8 @@ class ProxyBot(telebot.TeleBot):
                 text = '{:full}'.format(chat)
                 buttons.append(
                     types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
+            else:
+                text = '{:full}'.format(chat)
 
             if chat.blocked:
                 buttons.append(
@@ -143,7 +145,10 @@ class ProxyBot(telebot.TeleBot):
                 buttons.append(types.InlineKeyboardButton(strings.btn.list[list_type],
                                                           callback_data='list_{}_1'.format(list_type)))
             markup.add(*buttons)
-            markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
+            markup.add(
+                types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'),
+                types.InlineKeyboardButton(strings.btn.toggle_md, callback_data='toggle_md')
+            )
             markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
             bot.send_message(
                 master_id,
@@ -160,7 +165,10 @@ class ProxyBot(telebot.TeleBot):
                 buttons.append(types.InlineKeyboardButton(strings.btn.list[list_type],
                                                           callback_data='list_{}_1'.format(list_type)))
             markup.add(*buttons)
-            markup.add(types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'))
+            markup.add(
+                types.InlineKeyboardButton(strings.btn.set_messages, callback_data='master'),
+                types.InlineKeyboardButton(strings.btn.toggle_md, callback_data='toggle_md')
+            )
             markup.add(types.InlineKeyboardButton(strings.btn.help, callback_data='help'))
             bot.edit_message_text(
                 text=strings.msg.menu.format(first_name=cb.from_user.first_name),
@@ -170,6 +178,14 @@ class ProxyBot(telebot.TeleBot):
                 parse_mode='HTML'
             )
             bot.answer_callback_query(cb.id, strings.ans.menu)
+
+        @bot.callback_query_handler(func=lambda cb: cb.data == 'toggle_md')
+        def toggle_md(cb):
+            db.common.markdown = not db.common.markdown
+            if db.common.markdown:
+                bot.answer_callback_query(cb.id, strings.ans.md_on, show_alert=True)
+            else:
+                bot.answer_callback_query(cb.id, strings.ans.md_off, show_alert=True)
 
         @bot.message_handler(func=lambda message: message.chat.id == master_id, commands=["help"])
         def command_help(message):
@@ -527,7 +543,10 @@ class ProxyBot(telebot.TeleBot):
         def resend(message, chat_id):
             if message.content_type == 'text':
                 bot.send_chat_action(chat_id, action='typing')
-                return bot.send_message(chat_id, message.md_form, parse_mode='Markdown')
+                if db.common.markdown:
+                    return bot.send_message(chat_id, message.md_form, parse_mode='Markdown')
+                else:
+                    return bot.send_message(chat_id, message.html_form, parse_mode='HTML')
             elif message.content_type == "sticker":
                 bot.send_chat_action(chat_id, action='typing')
                 return bot.send_sticker(chat_id, message.sticker.file_id)

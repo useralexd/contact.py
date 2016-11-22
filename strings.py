@@ -15,6 +15,7 @@ class btn:
         'blocked': 'Blocked'
     }
     menu = 'Main menu'
+    toggle_md = 'Toggle markdown'
 
 
 class msg:
@@ -149,6 +150,8 @@ class ans:
     returned = 'Returned..'
     menu = 'Menu'
     help = 'Help'
+    md_on = 'Markdown is ON now! \nTake care using MD symbols such as: \n_italic_ *bold* `code` [link](ggl.com)'
+    md_off = 'Markdown is OFF now!'
 
 
 pager_marks = ['« ', '< ', '·', ' >', ' »']
