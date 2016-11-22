@@ -54,7 +54,8 @@ Here is the main menu. Let me describe the buttons below:
 this group might be updated to supergroup! I can't properly handle this case!!!</b>'''
     new_channel = '''The bot was added to {:full}\n
 <b>Make sure your bot is admin of the \
-channel to send messages to it!</b>'''
+channel to send messages to it!</b>
+I won't track message history for channels. Sorry about that.'''
     new_sgroup = '''The bot was added to {:full}\n
 <b>Don't violate the rules of the group!</b>'''
 
@@ -69,7 +70,8 @@ channel to send messages to it!</b>'''
     no_items = {
         'user': 'There are no chats yet',
         'group': 'The bot wasn\'t added to any group yet',
-        'channel': 'Bot wasn\'t added to any channel yet',
+        'channel':
+            'Bot wasn\'t added to any channel yet.\nAdd me to channel as admin and forward me any message from it.',
         'blocked': 'You haven\'t blocked any chat yet'
     }
 

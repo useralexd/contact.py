@@ -114,7 +114,7 @@ class ProxyBot(telebot.TeleBot):
                         types.InlineKeyboardButton(strings.btn.hide_log, callback_data='chat_hide_{}'.format(chat.id)))
                 else:
                     text = '{:full}'.format(chat)
-            else:
+            elif chat.type != 'channel':
                 text = '{:full}'.format(chat)
                 buttons.append(
                     types.InlineKeyboardButton(strings.btn.show_log, callback_data='log_{}_0'.format(chat.id)))
@@ -400,6 +400,14 @@ class ProxyBot(telebot.TeleBot):
                     db.common.startmsg.format(name=message.from_user.first_name)
                 )
 
+        @bot.message_handler(func=lambda m: m.chat.id == master_id and m.forward_from_chat)
+        def add_channel(msg):
+            chat = msg.forward_from_chat
+            text, markup = get_chatview_markup(chat)
+            bot.send_message(self.master_id, strings.msg.new_channel.format(chat),
+                             reply_markup=markup, parse_mode='HTML')
+            db.chat.update(chat)
+
         @bot.message_handler(
             func=lambda m: m.chat.type != 'private',
             content_types=[
@@ -511,9 +519,10 @@ class ProxyBot(telebot.TeleBot):
                         callback_data='log_{}_0'.format(sent_msg.chat.id))
                     )
                     bot.send_message(self.master_id, strings.msg.sent, parse_mode='HTML', reply_markup=markup)
-                    db.msg.create(sent_msg)  # log message in db
+                    if sent_msg.chat.type != 'channel':
+                        db.msg.create(sent_msg)  # log message in db
+                        db.common.update_last_seen()
                     db.common.replying_to = chat_id
-                    db.common.update_last_seen()
 
         def resend(message, chat_id):
             if message.content_type == 'text':
