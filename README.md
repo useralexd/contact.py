@@ -32,7 +32,7 @@ Thank you! It might take a while...
 ```
 
 ### Thanks
-The original idea and the very first version of `proxybot` are came from [Groosha](https://bitbucket.org/master_groosha/telegram-proxy-bot).
+The original idea and the very first version of `proxybot` are came from [Groosha](https://bitbucket.org/mastergroosha/telegram-proxy-bot).
 Some extra features came from the repo it was forked from: [Mr_Gigabyte](https://github.com/mrgigabyte/proxybot)'s patched version.
 
 ## Webhook Proxy bot
