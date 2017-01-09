@@ -16,7 +16,7 @@ def escape_html(text):
 
 def entities_to_html(text, entities):
     if entities is None:
-        return text
+        return escape_html(text)
     new_text = ''
     p = 0
     for entity in entities:
