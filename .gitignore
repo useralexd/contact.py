@@ -63,4 +63,5 @@ target/
 
 .idea/
 
-local_config.py
+proxybot/local_config.py
+.env

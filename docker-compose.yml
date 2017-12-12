@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+  proxybot:
+    environment:
+      - PROXYBOT_TOKEN
+      - PROXYBOT_MY_ID
+      - PROXYBOT_DB_AUTH
+      - PROXYBOT_DB_NAME
+      - PROXYBOT_AVAILABILITY_EXPIRATION
+      - PROXYBOT_REPLYING_EXPIRATION
+      - PROXYBOT_PUBLIC_HOST
+      - PROXYBOT_LISTEN_PORT
+      - PROXYBOT_PORT
+    build: 
+      context: .
+      dockerfile: Dockerfile.polling
+  #mongo:
+
