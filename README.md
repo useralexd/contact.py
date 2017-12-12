@@ -47,6 +47,10 @@ Flask app that is a special bot that can spawn webhook version of [ProxyBot](#pr
 * [pyMongo](https://pypi.python.org/pypi/pymongo) driver and MongoDB credentials;
 * Flask (optional for webhook versions)
 
+## Deploy with docker
+* Copy `.env.example` to `.env` and specify your credentials in it
+* `$ docker-compose up -d`
+
 ## Remember!
 I understand, that "proxy" bots can be used to prevent spammers from being reported, so if you encounter such bots that are used to do "bad" things, feel free to report them: [abuse@telegram.org](mailto:abuse@telegram.org)
 

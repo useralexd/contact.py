@@ -79,6 +79,7 @@ class ProxyBot(telebot.TeleBot):
         me = bot.get_me()
         self.id = me.id
         self.username = me.username
+        master_id = int(master_id)
         self.master_id = master_id
         db = self.db = db_helper.DB(self.id)
 
