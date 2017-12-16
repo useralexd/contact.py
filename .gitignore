@@ -65,3 +65,4 @@ target/
 
 proxybot/local_config.py
 .env
+.swp

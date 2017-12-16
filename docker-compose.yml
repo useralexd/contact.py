@@ -15,5 +15,16 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile.polling
-  #mongo:
+    links: 
+      - mongodb
+  mongodb:
+    image: mvertes/alpine-mongo:latest
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    volumes:
+      - /data/db
+    ports:
+      - 27017:27017
+    command: mongod --smallfiles --logpath=/dev/null --noauth
 
