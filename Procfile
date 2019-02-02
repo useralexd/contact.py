@@ -1,1 +1,1 @@
-web: python3 -m proxybot
+web: python -m proxybot
