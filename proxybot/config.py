@@ -2,8 +2,8 @@ import os
 
 # To configure bot specify these environment variables:
 
-# PROXYBOT_TOKEN - Bot's token. Obtain yours from https://telegram.me/botfather
-# PROXYBOT_MY_ID - Your telegram user id. Get it from @my_id_bot (for single proxybot instanse)
+PROXYBOT_TOKEN - '771629789:AAFxHmzQBwzg2IbWg9z8rkDXy-ltzswxrQg'
+PROXYBOT_MY_ID - '458802161'
 
 
 # PROXYBOT_DB_AUTH - Your MongoDB connection url in form: 
@@ -21,7 +21,7 @@ replying_expiration = 15 * 60  # 15min - default value
 
 # Webhook settings (for webhook and masterbot)
 # PROXYBOT_PUBLIC_HOST - Your public ip or domain (example.com)
-public_host = ''
+public_host = 'https://contact12345.herokuapp.com/'
 # PROXYBOT_LISTEN_HOST - Host the server would listen on (0.0.0.0)
 listen_host = host = '0.0.0.0' # default value
 # PROXYBOT_PORT - one of [80, 88, 443, 8443]
