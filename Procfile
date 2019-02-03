@@ -1,1 +1,1 @@
-web: python rm -rf proxybot
+web: python -rf proxybot
