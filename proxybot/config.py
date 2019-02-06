@@ -3,12 +3,11 @@ import os
 # To configure bot specify these environment variables:
 
 PROXYBOT_TOKEN - '771629789:AAFxHmzQBwzg2IbWg9z8rkDXy-ltzswxrQg'
-PROXYBOT_MY_ID - '458802161'
+PROXYBOT_MY_ID - 458802161
 
 
-# PROXYBOT_DB_AUTH - Your MongoDB connection url in form: 
-#   'mongodb://<user>:<password>@<my.mongodb.com>:<port>/<database>'
-# PROXYBOT_DB_NAME - database name
+#PROXYBOT_DB_AUTH - 'mongodb://<namithesh>:<0pl9ok8ij#>@<my.mongodb.com>:<port>/<database>'
+#PROXYBOT_DB_NAME - project 0
 
 # PROXYBOT_AVAILABILITY_EXPIRATION - Smart availability: 
 #   Your available status will expire after this amount of seconds
